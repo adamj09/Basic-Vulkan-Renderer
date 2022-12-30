@@ -1,0 +1,45 @@
+# Prerequisites
+*.d
+
+# Compiled Shaders
+*.spv
+
+# Compiled object files (.obj is not included as we want models to be uploaded)
+*.slo
+*.o
+*.lo
+
+# Compiled Dynamic Libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static Libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake Files
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+.cmake
+
+# Ninja Files
+*.ninja_deps
+*.ninja_log
+*.ninja
