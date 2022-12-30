@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include <stdexcept>
+#include <array>
 
 namespace Renderer{
     Renderer::Renderer(Device& device, Window& window) : device{device}, window{window}{
@@ -98,6 +99,7 @@ namespace Renderer{
         renderPassInfo.framebuffer = swapChain->getFrameBuffer(currentImageIndex);
         renderPassInfo.renderArea.offset = { 0, 0 };
         renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
+
         std::array<VkClearValue, 3> clearValues{};
         clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f }; // Default "background colour" rendered
         clearValues[1].depthStencil = { 1.0f, 0 }; // Default render depth
