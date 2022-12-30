@@ -63,7 +63,7 @@ namespace Application{
         }
         vkDeviceWaitIdle(device.getDevice());
     }
-    // Test comment
+
     /*void App::createObjects(){
         //Sampler for testing
         Renderer::Sampler::SamplerConfig textureSamplerConfig{};
