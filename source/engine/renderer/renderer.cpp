@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include <stdexcept>
+#include <array>
 
 namespace Renderer{
     Renderer::Renderer(Device& device, Window& window) : device{device}, window{window}{
