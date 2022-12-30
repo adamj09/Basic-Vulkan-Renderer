@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include <stdexcept>
+#include <array>
 
 namespace Renderer{
     Renderer::Renderer(Device& device, Window& window) : device{device}, window{window}{
@@ -91,7 +92,7 @@ namespace Renderer{
     void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer){
         assert(isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
         assert(commandBuffer == getCurrentCommandBuffer() && "Can't begin render pass on command buffer from a different frame");
-
+    
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = swapChain->getRenderPass();
