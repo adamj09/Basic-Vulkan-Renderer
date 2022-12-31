@@ -32,14 +32,9 @@ namespace Renderer{
         textures[sampleImage->getId()] = sampleImage;
     }
 
-    void Scene::createMesh(){
-        Mesh newMesh = Mesh::createMesh();
-        meshes.emplace(newMesh.getId(), newMesh);
-    }
-
-    void Scene::createMaterial(){
-        Material newMaterial = Material::createMaterial();
-        materials.emplace(newMaterial.getId(), newMaterial);
+    void Scene::createObject(){
+        Object newObject = Object::createObject();
+        objects.emplace(newObject.getId(), newObject);
     }
 
     void Scene::createSampler(Device& device, Sampler::SamplerConfig config){

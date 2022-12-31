@@ -16,9 +16,10 @@ namespace Renderer{
     }
 
     RenderSystem::~RenderSystem(){
+
         vkDestroyPipelineLayout(device.getDevice(), cullPipelineLayout, nullptr);
 
-        vkDestroyDescriptorSetLayout(device.getDevice(), globalSetLayout->getLayout(), nullptr);
+        vkDestroyDescriptorSetLayout(device.getDevice(), renderSetLayout->getLayout(), nullptr);
         vkDestroyPipelineLayout(device.getDevice(), renderPipelineLayout, nullptr);
     }
 
@@ -50,27 +51,19 @@ namespace Renderer{
         scene.loadTexturesWithSampler(device, 0);
         scene.loadModels(device);
 
-        // spongebob material
-        scene.createMaterial();
-        scene.materials.at(0).diffuseTextureIds.push_back(0);
+        // spongebob object
+        scene.createObject();
+        scene.objects.at(0).modelId = 0; // spongebob model
+        scene.objects.at(0).textureId = 0; // spongebob texture
+        scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
+        scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
-        // spongebob mesh
-        scene.createMesh();
-        scene.meshes.at(0).modelId = 0; // spongebob model
-        scene.meshes.at(0).materialId = 0; // spongebob material
-        scene.meshes.at(0).transform.translation = {1.5f, .5f, 0.f};
-        scene.meshes.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-
-        // sample material
-        scene.createMaterial();
-        scene.materials.at(1).diffuseTextureIds.push_back(1);
-
-        // sample mesh
-        scene.createMesh();
-        scene.meshes.at(1).modelId = 1;
-        scene.meshes.at(1).materialId = 1;
-        scene.meshes.at(1).transform.translation = {-.5f, .5f, 0.f};
-        scene.meshes.at(1).transform.scale = {4.f, 4.f, 4.f};
+        // sample object
+        scene.createObject();
+        scene.objects.at(1).modelId = 1; // sample model
+        scene.objects.at(1).textureId = 1; // sampler texture
+        scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
+        scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
 
     void RenderSystem::setupDescriptorSets(){
@@ -83,13 +76,19 @@ namespace Renderer{
         
         // Pool Setup
         globalPool = std::make_unique<DescriptorPool>(device);
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);        // Uniform data
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Instance data (for cull pipeline) 
         globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        // Layout Setup
-        globalSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        // Bindings are set in order of when they are added
-        globalSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
-        globalSetLayout->buildLayout();
+
+        // Layout Setup (Bindings are set in order of when they are added)
+        // Render set (vert and frag shaders)
+        renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
+        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
+        renderSetLayout->buildLayout();
+        // Cull set (compute shader)
+        cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        cullSetLayout->buildLayout();
 
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             // Fill universal matrix buffer info
@@ -97,16 +96,16 @@ namespace Renderer{
 
             // Writes list
             std::vector<VkWriteDescriptorSet> writes{
-                globalSetLayout->writeBuffer(0, &uniformDataInfo), 
+                renderSetLayout->writeBuffer(0, &uniformDataInfo), 
             };
 
-            globalPool->allocateSet(globalSetLayout->getLayout());
+            globalPool->allocateSet(renderSetLayout->getLayout());
             globalPool->updateSet(i, writes);
         }
     }
 
     void RenderSystem::createGraphicsPipelineLayout(){
-        auto layout = globalSetLayout->getLayout();
+        auto layout = renderSetLayout->getLayout();
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layoutInfo.setLayoutCount = 0;
@@ -156,22 +155,31 @@ namespace Renderer{
     }
 
     void RenderSystem::createIndirectCommands(){
-        instanceCount = static_cast<uint32_t>(scene.meshes.size());
+        indirectCommands.clear();
 
         // Where I left off, need to finish instanced rendering and indirect drawing + gpu-based culling
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
-        for(size_t i = 0; i < scene.meshes.size(); i++){
+        // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
+        uint32_t totalInstanceCount = 0;
+        uint32_t previousInstanceCount = 0;
+        for(size_t i = 0; i < scene.models.size(); i++){
+            uint32_t instanceCount = 0;
+            // Get the number of objects that use this model, this will become the number of instances of this model.
+            for(size_t j = 0; j < scene.objects.size(); j++){
+                if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
+                    instanceCount++;
+            }
+            // Create a new indexedIndirectCommand for each unique
             VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
-            newIndexedIndirectCommand.firstIndex = 0;
-            newIndexedIndirectCommand.instanceCount = instanceCount;
-            newIndexedIndirectCommand.firstInstance = i * instanceCount;
-            newIndexedIndirectCommand.indexCount = scene.models.at(scene.meshes.at(i).modelId)->getIndexCount();
-            indirectCommands.push_back(newIndexedIndirectCommand);
+            newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
+            newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
+            newIndexedIndirectCommand.firstInstance = previousInstanceCount; // Number of objects that used the previous model in the loop (offset by that number)
+            newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
+            indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
+
+            previousInstanceCount = instanceCount; // Updated at the end so the next command will use the current instanceCount value.
+            totalInstanceCount += instanceCount; // Add to the total instance count the current number of instances
         }
-        // Get number of meshes
-        meshCount = 0;
-        for(auto indCmd : indirectCommands)
-            meshCount += indCmd.indexCount;
 
         // Send indirect commands to GPU memory
         Buffer stagingBuffer{
@@ -199,18 +207,18 @@ namespace Renderer{
     }
 
     void RenderSystem::setupInstanceData(){
-        instanceData.resize(meshCount);
+        instanceData.resize(totalInstanceCount);
 
         // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
-        for(uint32_t i = 0; i < meshCount; i++){
-            auto mesh = scene.meshes.at(i);
-            instanceData[i].modelMatrix = mesh.transform.mat4();
-            instanceData[i].normalMatrix = mesh.transform.normalMatrix();
-            instanceData[i].translation = mesh.transform.translation;
-            instanceData[i].scale = mesh.transform.scale;
-            instanceData[i].rotation = mesh.transform.rotation;
-            instanceData[i].modelId = mesh.modelId;
-            instanceData[i].materialId = mesh.materialId;
+        for(uint32_t i = 0; i < totalInstanceCount; i++){
+            auto object = scene.objects.at(i);
+            instanceData[i].modelMatrix = object.transform.mat4();
+            instanceData[i].normalMatrix = object.transform.normalMatrix();
+            instanceData[i].translation = object.transform.translation;
+            instanceData[i].scale = object.transform.scale;
+            instanceData[i].rotation = object.transform.rotation;
+            instanceData[i].modelId = object.modelId;
+            instanceData[i].materialId = object.textureId;
         }
         // Two instance data buffers needed with duplicate data since we're double buffering
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
@@ -240,6 +248,7 @@ namespace Renderer{
     }
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
+        cullPipeline->bind(commandBuffer);
         renderPipeline->bind(commandBuffer);
         vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffer->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
     }

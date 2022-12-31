@@ -20,7 +20,7 @@ namespace Renderer{
             int lookDown = GLFW_KEY_DOWN;
         };
 
-        void moveInPlaneXZ(GLFWwindow* window, float dt, Camera& camera);
+        void moveInPlaneXZ(GLFWwindow* window, float dt, Object& object);
 
         KeyMappings keys{};
         float moveSpeed{0};

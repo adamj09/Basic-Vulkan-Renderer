@@ -1,6 +1,6 @@
 #include "pipeline.hpp"
 
-#include "engine/mesh/model.hpp"
+#include "engine/model/model.hpp"
 
 #include <fstream>
 #include <iostream>

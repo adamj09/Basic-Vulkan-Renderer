@@ -66,11 +66,11 @@ namespace Renderer{
 
             Scene scene;
 
-            std::unique_ptr<GraphicsPipeline> renderPipeline;
-            VkPipelineLayout renderPipelineLayout;
-
             std::unique_ptr<ComputePipeline> cullPipeline;
             VkPipelineLayout cullPipelineLayout;
+
+            std::unique_ptr<GraphicsPipeline> renderPipeline;
+            VkPipelineLayout renderPipelineLayout;
 
             std::vector<std::unique_ptr<Buffer>> instanceBuffers;
             
@@ -80,12 +80,13 @@ namespace Renderer{
             std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
             std::unique_ptr<DescriptorPool> globalPool;
-            std::unique_ptr<DescriptorSetLayout> globalSetLayout;
+
+            std::unique_ptr<DescriptorSetLayout> cullSetLayout;
+            std::unique_ptr<DescriptorSetLayout> renderSetLayout;
 
             std::vector<std::unique_ptr<Buffer>> uniformBuffers;
             uint32_t latestBinding = 0;
 
-            uint32_t instanceCount;
-            uint32_t meshCount;
+            uint32_t totalInstanceCount;
     };
 }

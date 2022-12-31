@@ -4,8 +4,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-#include "engine/mesh/mesh.hpp"
-
 namespace Renderer{
     class Camera{
         public:
@@ -19,8 +17,6 @@ namespace Renderer{
             const glm::mat4& getView() const { return viewMatrix; }
             const glm::mat4& getInverseView() const { return inverseViewMatrix; }
             const glm::vec3 getPosition() const { return glm::vec3(inverseViewMatrix[3]); }
-
-            TransformComponent transform;
 
             bool enableFrustumCulling = true;
 
