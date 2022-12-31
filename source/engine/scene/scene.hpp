@@ -25,8 +25,10 @@ namespace Renderer{
 
             void createSampler(Device& device, Sampler::SamplerConfig config);
 
-            // In-engine components (stuff the user will be interacting with)
+            // Total objects in scene, can contain copies
             Object::Map objects;
+
+            // Unique meshes and materials (to be instanced)
             Mesh::Map meshes;
             Material::Map materials;
 

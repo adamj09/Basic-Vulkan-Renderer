@@ -16,13 +16,13 @@ if (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
     endif()
     set(USE_MINGW "True")
     set(CMAKE_C_COMPILER ${MINGW_PATH}/bin/gcc.exe)
-    set(CMAKE_CXX_COMPILER  ${MINGW_PATH}/bin/g++.exe)
+    set(CMAKE_CXX_COMPILER ${MINGW_PATH}/bin/g++.exe)
 endif()
 
 # Project creation
 project(${NAME} VERSION 0.1.0)
 
-# Uses Vulkan path in env.cmake to target specific version
+# Uses Vulkan path in .env.cmake to target specific version
 if (DEFINED VULKAN_SDK_PATH)
   message(STATUS "Using Vulkan path specified in .env.cmake file")
   set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
@@ -99,6 +99,10 @@ endif()
 file(GLOB_RECURSE GLSL_SOURCES
     ${PROJECT_SOURCE_DIR}/source/shaders/*.frag
     ${PROJECT_SOURCE_DIR}/source/shaders/*.vert
+    ${PROJECT_SOURCE_DIR}/source/shaders/*.tesc
+    ${PROJECT_SOURCE_DIR}/source/shaders/*.tese
+    ${PROJECT_SOURCE_DIR}/source/shaders/*.geom
+    ${PROJECT_SOURCE_DIR}/source/shaders/*.comp
 )
 
 foreach(GLSL ${GLSL_SOURCES})

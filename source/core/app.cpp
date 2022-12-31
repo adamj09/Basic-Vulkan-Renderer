@@ -12,18 +12,14 @@
 #include "engine/material/sampler/sampler.hpp"
 
 namespace Application{
-    App::App(){
-        renderSystem.initializeRenderSystem();
-    }
-
+    App::App(){}
     App::~App(){}
 
     void App::run(){
         // Camera creation
         Renderer::Camera camera{};
         Renderer::KeyboardMovementController cameraController{};
-        auto viewerObject = Renderer::Object::createObject();
-        viewerObject.transform.translation.z = -2.5f;
+        camera.transform.translation.z = -2.5f;
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
@@ -43,8 +39,8 @@ namespace Application{
             // Camera Setup
             cameraController.moveSpeed = (0.0035f); //TODO: should probably add a "look sensitivity" option, also need to add mouse controls alongside existing keyboard controls
             cameraController.lookSpeed = (0.0035f);
-            cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
-            camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+            cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, camera);
+            camera.setViewYXZ(camera.transform.translation, camera.transform.rotation);
             float aspect = renderer.getAspectRatio();
             camera.setPerspectiveProjection(glm::radians(90.f), aspect, 0.1f, 100.f);
 
@@ -55,7 +51,7 @@ namespace Application{
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects
-                renderSystem.drawScene(commandBuffer, frameIndex);
+                //renderSystem.drawScene(commandBuffer, frameIndex);
                 // End Renderpass
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame();

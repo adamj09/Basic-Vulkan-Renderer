@@ -1,5 +1,5 @@
-set(GLFW_PATH C:/Programming/Libraries/glfw-3.3.8.bin.WIN64/include) # Path to include header
-set(GLFW_LIB_PATH C:/Programming/Libraries/glfw-3.3.8.bin.WIN64/lib-mingw-w64) # Path to dll
+set(GLFW_PATH C:/Programming/Libraries/glfw-3.3.8.bin.WIN64/include) # Path to GLFW include header
+set(GLFW_LIB_PATH C:/Programming/Libraries/glfw-3.3.8.bin.WIN64/lib-mingw-w64) # Path to GLFW dll
 set(VULKAN_SDK_PATH C:/VulkanSDK/1.3.216.0) # Path to Vulkan SDK
 set(MINGW_PATH "C:/msys64/mingw64") # Path to g++ compiler
 set(GLM_PATH C:/Programming/Libraries/glm-0.9.9.8) # Path to glm library

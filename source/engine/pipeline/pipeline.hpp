@@ -25,20 +25,7 @@ namespace Renderer{
         uint32_t subpass = 0;
     };
 
-    class ShaderModule{
-        public:
-            ShaderModule(Device& device, const std::string& filepath);
-            ~ShaderModule();
-
-            VkShaderModule getShaderModule() { return shaderModule; }
-
-        private:
-            static std::vector<char> readFile(const std::string& filepath);
-            void createShaderModule(const std::vector<char>& code);
-
-            Device& device;
-            VkShaderModule shaderModule;
-    };
+    static std::vector<char> readFile(const std::string& filepath);
 
     class GraphicsPipeline{
         public:
@@ -53,7 +40,7 @@ namespace Renderer{
 
             Device& device;
             VkPipeline graphicsPipeline;
-            std::unique_ptr<ShaderModule> vertShaderModule, fragShaderModule;
+            VkShaderModule vertShaderModule, fragShaderModule;
     };
 
     class ComputePipeline{
@@ -68,6 +55,6 @@ namespace Renderer{
 
             Device& device;
             VkPipeline computePipeline;
-            std::unique_ptr<ShaderModule> compShaderModule;
+            VkShaderModule compShaderModule;
     };
 }

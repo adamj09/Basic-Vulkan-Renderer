@@ -40,12 +40,12 @@ namespace Renderer{
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void initializeRenderSystem();
-
             void updateUniformBuffer(Camera camera, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:
+            void initializeRenderSystem();
+
             void setupScene();
             void setupDescriptorSets();
 
@@ -67,7 +67,7 @@ namespace Renderer{
             Scene scene;
 
             std::unique_ptr<GraphicsPipeline> renderPipeline;
-            VkPipelineLayout pipelineLayout;
+            VkPipelineLayout renderPipelineLayout;
 
             std::unique_ptr<ComputePipeline> cullPipeline;
             VkPipelineLayout cullPipelineLayout;
@@ -86,6 +86,6 @@ namespace Renderer{
             uint32_t latestBinding = 0;
 
             uint32_t instanceCount;
-            uint32_t objectCount;
+            uint32_t meshCount;
     };
 }

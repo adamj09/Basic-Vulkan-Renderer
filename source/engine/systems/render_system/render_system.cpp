@@ -11,22 +11,26 @@
 
 namespace Renderer{
     RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) 
-    : device{device}, renderPass{renderPass}{}
+    : device{device}, renderPass{renderPass}{
+        initializeRenderSystem();
+    }
 
     RenderSystem::~RenderSystem(){
+        vkDestroyPipelineLayout(device.getDevice(), cullPipelineLayout, nullptr);
+
         vkDestroyDescriptorSetLayout(device.getDevice(), globalSetLayout->getLayout(), nullptr);
-        vkDestroyPipelineLayout(device.getDevice(), pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device.getDevice(), renderPipelineLayout, nullptr);
     }
 
     void RenderSystem::initializeRenderSystem(){
         setupScene();
         setupDescriptorSets();
 
-        createGraphicsPipelineLayout();
-        createGraphicsPipeline();
-
         createComputePipelineLayout();
         createComputePipeline();
+
+        createGraphicsPipelineLayout();
+        createGraphicsPipeline();
 
         createIndirectCommands();
         setupInstanceData();
@@ -41,39 +45,32 @@ namespace Renderer{
         textureSamplerConfig.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         textureSamplerConfig.maxLod = 100.f;
         scene.createSampler(device, textureSamplerConfig);
-
+        
         // Load assets
         scene.loadTexturesWithSampler(device, 0);
         scene.loadModels(device);
 
         // spongebob material
         scene.createMaterial();
-        scene.materials.end()->second.diffuseTextureIds.push_back(0);
+        scene.materials.at(0).diffuseTextureIds.push_back(0);
 
         // spongebob mesh
         scene.createMesh();
-        scene.meshes.end()->second.modelId = 0; // spongebob model
-        scene.meshes.end()->second.materialId = 0; // spongebob material
-
-        // spongebob object
-        scene.createObject();
-        scene.objects.end()->second.transform.translation = {1.5f, .5f, 0.f};
-        scene.objects.end()->second.transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-        scene.objects.end()->second.meshIds.push_back(0);
+        scene.meshes.at(0).modelId = 0; // spongebob model
+        scene.meshes.at(0).materialId = 0; // spongebob material
+        scene.meshes.at(0).transform.translation = {1.5f, .5f, 0.f};
+        scene.meshes.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
         // sample material
         scene.createMaterial();
-        scene.materials.end()->second.diffuseTextureIds.push_back(1);
+        scene.materials.at(1).diffuseTextureIds.push_back(1);
 
         // sample mesh
         scene.createMesh();
-        scene.meshes.end()->second.modelId = 1;
-        scene.meshes.end()->second.materialId = 1;
-
-        // sample object
-        scene.createObject();
-        scene.objects.end()->second.transform.translation = {-.5f, .5f, 0.f};
-        scene.objects.end()->second.transform.scale = {4.f, 4.f, 4.f};
+        scene.meshes.at(1).modelId = 1;
+        scene.meshes.at(1).materialId = 1;
+        scene.meshes.at(1).transform.translation = {-.5f, .5f, 0.f};
+        scene.meshes.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
 
     void RenderSystem::setupDescriptorSets(){
@@ -112,21 +109,21 @@ namespace Renderer{
         auto layout = globalSetLayout->getLayout();
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 1;
-        layoutInfo.pSetLayouts = &layout;
+        layoutInfo.setLayoutCount = 0;
+        layoutInfo.pSetLayouts = nullptr;
         layoutInfo.pushConstantRangeCount = 0;
         layoutInfo.pPushConstantRanges = nullptr;
 
-        if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+        if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &renderPipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("Failed to create graphics pipeline layout.");
     }
 
     void RenderSystem::createGraphicsPipeline(){
-        assert(pipelineLayout != nullptr && "Cannot create graphics pipeline before graphics pipeline layout.");
+        assert(renderPipelineLayout != nullptr && "Cannot create graphics pipeline before graphics pipeline layout.");
 
         GraphicsPipelineConfigInfo configInfo = {};
         GraphicsPipeline::defaultPipelineConfigInfo(configInfo);
-        configInfo.pipelineLayout = pipelineLayout;
+        configInfo.pipelineLayout = renderPipelineLayout;
         configInfo.renderPass = renderPass;
         renderPipeline = std::make_unique<GraphicsPipeline>(
             device,
@@ -153,31 +150,30 @@ namespace Renderer{
 
         cullPipeline = std::make_unique<ComputePipeline>(
             device,
-            "C:/Programming/C++_Projects/renderer/source/shaders/cull.comp",
+            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/cull.comp.spv",
             cullPipelineLayout
         );
     }
 
     void RenderSystem::createIndirectCommands(){
-        instanceCount = static_cast<uint32_t>(scene.objects.size());
+        instanceCount = static_cast<uint32_t>(scene.meshes.size());
 
         // Where I left off, need to finish instanced rendering and indirect drawing + gpu-based culling
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
-        for(auto obj : scene.objects){
-            for(int i = 0; i < obj.second.meshIds.size(); i++){
-                VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
-                newIndexedIndirectCommand.firstIndex = 0;
-                newIndexedIndirectCommand.instanceCount = instanceCount;
-                newIndexedIndirectCommand.firstInstance = i * instanceCount;
-                newIndexedIndirectCommand.indexCount = scene.models.at(scene.meshes.at(i).modelId)->getIndexCount();
-                indirectCommands.push_back(newIndexedIndirectCommand);
-            }
+        for(size_t i = 0; i < scene.meshes.size(); i++){
+            VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
+            newIndexedIndirectCommand.firstIndex = 0;
+            newIndexedIndirectCommand.instanceCount = instanceCount;
+            newIndexedIndirectCommand.firstInstance = i * instanceCount;
+            newIndexedIndirectCommand.indexCount = scene.models.at(scene.meshes.at(i).modelId)->getIndexCount();
+            indirectCommands.push_back(newIndexedIndirectCommand);
         }
-
-        objectCount = 0;
+        // Get number of meshes
+        meshCount = 0;
         for(auto indCmd : indirectCommands)
-            objectCount += indCmd.indexCount;
+            meshCount += indCmd.indexCount;
 
+        // Send indirect commands to GPU memory
         Buffer stagingBuffer{
             device,
             1,
@@ -203,19 +199,19 @@ namespace Renderer{
     }
 
     void RenderSystem::setupInstanceData(){
-        instanceData.resize(objectCount);
+        instanceData.resize(meshCount);
 
         // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
-        /*for(uint32_t i = 0; i < objectCount; i++){
-            auto object = scene.objects.at(i);
-            instanceData[i].modelMatrix = object.transform.mat4();
-            instanceData[i].normalMatrix = object.transform.normalMatrix();
-            instanceData[i].translation = object.transform.translation;
-            instanceData[i].scale = object.transform.scale;
-            instanceData[i].rotation = object.transform.rotation;
-            instanceData[i].modelId = object.modelId;
-            instanceData[i].materialId = object.materialId;
-        }*/
+        for(uint32_t i = 0; i < meshCount; i++){
+            auto mesh = scene.meshes.at(i);
+            instanceData[i].modelMatrix = mesh.transform.mat4();
+            instanceData[i].normalMatrix = mesh.transform.normalMatrix();
+            instanceData[i].translation = mesh.transform.translation;
+            instanceData[i].scale = mesh.transform.scale;
+            instanceData[i].rotation = mesh.transform.rotation;
+            instanceData[i].modelId = mesh.modelId;
+            instanceData[i].materialId = mesh.materialId;
+        }
         // Two instance data buffers needed with duplicate data since we're double buffering
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             Buffer stagingBuffer{

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <cassert>
+#include <array>
 
 namespace Renderer{
     GraphicsPipeline::GraphicsPipeline(Device& device, const std::string& vertFilepath, const std::string& fragFilepath, const GraphicsPipelineConfigInfo& configInfo) : device{device}{
@@ -12,27 +13,63 @@ namespace Renderer{
     }
 
     GraphicsPipeline::~GraphicsPipeline(){
+        vkDestroyShaderModule(device.getDevice(), vertShaderModule, nullptr);
+        vkDestroyShaderModule(device.getDevice(), fragShaderModule, nullptr);
         vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
     }
 
-    void GraphicsPipeline::createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath, const GraphicsPipelineConfigInfo& configInfo){
-        assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout provided in configInfo.");
-        assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline: no renderPass provided in configInfo.");
+    std::vector<char> readFile(const std::string& filepath){
+        std::ifstream file{ filepath, std::ios::ate | std::ios::binary };
 
-        vertShaderModule = std::make_unique<ShaderModule>(device, vertFilepath);
-        fragShaderModule = std::make_unique<ShaderModule>(device, fragFilepath);
+        if (!file.is_open())
+            throw std::runtime_error("Failed to open file: " + filepath);
+
+        size_t fileSize = static_cast<size_t>(file.tellg());
+        std::vector<char> buffer(fileSize);
+        
+        file.seekg(0);
+        file.read(buffer.data(), fileSize);
+
+        file.close();
+        return buffer;
+    }
+
+    void GraphicsPipeline::createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath, const GraphicsPipelineConfigInfo& configInfo){
+        assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "Cannot create graphics pipeline: no pipelineLayout was provided in configInfo.");
+        assert(configInfo.renderPass != VK_NULL_HANDLE && "Cannot create graphics pipeline: no renderPass was provided in configInfo.");
+
+        auto vertCode = readFile(vertFilepath);
+        auto fragCode = readFile(fragFilepath);
+
+        std::array<VkShaderModuleCreateInfo, 2> shaderModuleCreateInfos;
+        shaderModuleCreateInfos[0].sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfos[0].codeSize = vertCode.size();
+        shaderModuleCreateInfos[0].pCode = reinterpret_cast<const uint32_t*>(vertCode.data());
+        shaderModuleCreateInfos[0].pNext = nullptr;
+        shaderModuleCreateInfos[0].flags = 0;
+
+        shaderModuleCreateInfos[1].sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfos[1].codeSize = fragCode.size();
+        shaderModuleCreateInfos[1].pCode = reinterpret_cast<const uint32_t*>(fragCode.data());
+        shaderModuleCreateInfos[1].pNext = nullptr;
+        shaderModuleCreateInfos[1].flags = 0;
+
+        if(vkCreateShaderModule(device.getDevice(), &shaderModuleCreateInfos[0], nullptr, &vertShaderModule) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create vertex shader module.");
+        if(vkCreateShaderModule(device.getDevice(), &shaderModuleCreateInfos[1], nullptr, &fragShaderModule) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create fragment shader module.");
 
         VkPipelineShaderStageCreateInfo shaderStages[2];
         shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = vertShaderModule->getShaderModule();
+        shaderStages[0].module = vertShaderModule;
         shaderStages[0].pName = "main";
         shaderStages[0].flags = 0;
         shaderStages[0].pNext = nullptr;
         shaderStages[0].pSpecializationInfo = nullptr;
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = fragShaderModule->getShaderModule();
+        shaderStages[1].module = fragShaderModule;
         shaderStages[1].pName = "main";
         shaderStages[1].flags = 0;
         shaderStages[1].pNext = nullptr;
@@ -153,27 +190,40 @@ namespace Renderer{
     }
 
     ComputePipeline::~ComputePipeline(){
+        vkDestroyShaderModule(device.getDevice(), compShaderModule, nullptr);
         vkDestroyPipeline(device.getDevice(), computePipeline, nullptr);
     }
 
     void ComputePipeline::createComputePipeline(const std::string& compFilepath, VkPipelineLayout layout){
-        compShaderModule = std::make_unique<ShaderModule>(device, compFilepath);
+        auto compCode = readFile(compFilepath);
+
+        VkShaderModuleCreateInfo shaderModuleInfo;
+        shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleInfo.codeSize = compCode.size();
+        shaderModuleInfo.pCode = reinterpret_cast<const uint32_t*>(compCode.data());
+        shaderModuleInfo.pNext = nullptr;
+        shaderModuleInfo.flags = 0;
+
+        if(vkCreateShaderModule(device.getDevice(), &shaderModuleInfo, nullptr, &compShaderModule) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create compute shader module.");
 
         VkPipelineShaderStageCreateInfo shaderStage;
-        shaderStage.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        shaderStage.module = compShaderModule->getShaderModule();
+        shaderStage.module = compShaderModule;
         shaderStage.pName = "main";
         shaderStage.flags = 0;
         shaderStage.pNext = nullptr;
-        shaderStage.pSpecializationInfo = nullptr;
+        shaderStage.pSpecializationInfo = (VkSpecializationInfo*)nullptr;
 
         VkComputePipelineCreateInfo pipelineInfo;
         pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
         pipelineInfo.stage = shaderStage;
         pipelineInfo.layout = layout;
+        pipelineInfo.flags = 0;
         pipelineInfo.basePipelineIndex = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+        pipelineInfo.pNext = nullptr;
 
         if(vkCreateComputePipelines(device.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline) != VK_SUCCESS)
             throw std::runtime_error("Failed to create compute pipeline.");
@@ -181,39 +231,5 @@ namespace Renderer{
 
     void ComputePipeline::bind(VkCommandBuffer commandBuffer){
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
-    }
-
-    ShaderModule::ShaderModule(Device& device, const std::string& filepath) : device{device}{
-        createShaderModule(readFile(filepath));
-    }
-
-    ShaderModule::~ShaderModule(){
-        vkDestroyShaderModule(device.getDevice(), shaderModule, nullptr);
-    }
-
-    std::vector<char> ShaderModule::readFile(const std::string& filepath){
-        std::ifstream file{ filepath, std::ios::ate | std::ios::binary };
-
-        if (!file.is_open())
-            throw std::runtime_error("Failed to open file: " + filepath);
-
-        size_t fileSize = static_cast<size_t>(file.tellg());
-        std::vector<char> buffer(fileSize);
-        
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-
-        file.close();
-        return buffer;
-    }
-
-    void ShaderModule::createShaderModule(const std::vector<char>& code){
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        if (vkCreateShaderModule(device.getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create shader module.");
     }
 }

@@ -7,7 +7,7 @@ layout(location = 3) in vec2 inFragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) uniform sceneUbo{
+/*layout(set = 0, binding = 0) uniform sceneUbo{
   mat4 projection;
   mat4 view;
   mat4 inverseView;
@@ -21,10 +21,10 @@ layout(set = 0, binding = 1) uniform modelDubo{
 
 layout(set = 0, binding = 2) uniform sampler texSampler;
 layout(set = 0, binding = 3) uniform texture2D textures[1];
-
+*/
 void main(){
-    vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
+    /*vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
     vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
 
-    outColor = texture(sampler2D(textures[model.textureIndex], texSampler), inFragTexCoord);
+    outColor = texture(sampler2D(textures[model.textureIndex], texSampler), inFragTexCoord);*/
 }

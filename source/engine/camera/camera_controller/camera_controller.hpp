@@ -2,6 +2,7 @@
 
 #include "engine/window/window.hpp"
 #include "engine/object/object.hpp"
+#include "engine/camera/camera.hpp"
 
 namespace Renderer{
     class KeyboardMovementController {
@@ -19,7 +20,7 @@ namespace Renderer{
             int lookDown = GLFW_KEY_DOWN;
         };
 
-        void moveInPlaneXZ(GLFWwindow* window, float dt, Object& object);
+        void moveInPlaneXZ(GLFWwindow* window, float dt, Camera& camera);
 
         KeyMappings keys{};
         float moveSpeed{0};
