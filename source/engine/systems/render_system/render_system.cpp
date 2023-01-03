@@ -81,11 +81,11 @@ namespace Renderer{
         globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
         // Layout Setup (Bindings are set in order of when they are added)
-        // Render set (vert and frag shaders)
+        // Render set layout (vert and frag shaders)
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
         renderSetLayout->buildLayout();
-        // Cull set (compute shader)
+        // Cull set layout (compute shader) LEFT OFF HERE
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
         cullSetLayout->buildLayout();
