@@ -39,7 +39,7 @@ namespace Renderer{
             void buildPool(uint32_t maxSets, VkDescriptorPoolCreateFlags flags = 0);
             void allocateSet(VkDescriptorSetLayout descriptorSetLayout);
             void updateSet(uint32_t setIndex, std::vector<VkWriteDescriptorSet> writes);
-
+            
         private:
             Device& device;
             VkDescriptorPool descriptorPool;

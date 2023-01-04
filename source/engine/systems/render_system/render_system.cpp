@@ -16,7 +16,7 @@ namespace Renderer{
     }
 
     RenderSystem::~RenderSystem(){
-
+        vkDestroyDescriptorSetLayout(device.getDevice(), cullSetLayout->getLayout(), nullptr);
         vkDestroyPipelineLayout(device.getDevice(), cullPipelineLayout, nullptr);
 
         vkDestroyDescriptorSetLayout(device.getDevice(), renderSetLayout->getLayout(), nullptr);
@@ -85,22 +85,33 @@ namespace Renderer{
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
         renderSetLayout->buildLayout();
-        // Cull set layout (compute shader) LEFT OFF HERE
+        // Cull set layout (compute shader)
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance data)
         cullSetLayout->buildLayout();
 
+        // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            // Fill universal matrix buffer info
-            VkDescriptorBufferInfo uniformDataInfo = uniformBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
 
-            // Writes list
-            std::vector<VkWriteDescriptorSet> writes{
-                renderSetLayout->writeBuffer(0, &uniformDataInfo), 
+            std::vector<VkWriteDescriptorSet> newWrites{
+                renderSetLayout->writeBuffer(0, &uniformBufferInfo)
             };
 
             globalPool->allocateSet(renderSetLayout->getLayout());
-            globalPool->updateSet(i, writes);
+            globalPool->updateSet(i, newWrites);
+        }
+
+        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
+            // Fill instance buffer info
+            VkDescriptorBufferInfo instanceCullBufferInfo = instanceCullBuffers[i]->descriptorInfo();
+            std::vector<VkWriteDescriptorSet> newWrites {
+                cullSetLayout->writeBuffer(0, &instanceCullBufferInfo)
+            };
+
+            globalPool->allocateSet(renderSetLayout->getLayout());
+            // add SwapChain::MAX_FRAMES_IN_FLIGHT to index to offset update index by the # of sets in the previous layout
+            globalPool->updateSet(i + SwapChain::MAX_FRAMES_IN_FLIGHT, newWrites);
         }
     }
 
@@ -157,7 +168,6 @@ namespace Renderer{
     void RenderSystem::createIndirectCommands(){
         indirectCommands.clear();
 
-        // Where I left off, need to finish instanced rendering and indirect drawing + gpu-based culling
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
         // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
         uint32_t totalInstanceCount = 0;
@@ -169,7 +179,7 @@ namespace Renderer{
                 if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
                     instanceCount++;
             }
-            // Create a new indexedIndirectCommand for each unique
+            // Create a new indexedIndirectCommand for each unique model
             VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
@@ -207,34 +217,29 @@ namespace Renderer{
     }
 
     void RenderSystem::setupInstanceData(){
-        instanceData.resize(totalInstanceCount);
-
+        instanceCullData.resize(totalInstanceCount);
+        
         // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
         for(uint32_t i = 0; i < totalInstanceCount; i++){
             auto object = scene.objects.at(i);
-            instanceData[i].modelMatrix = object.transform.mat4();
-            instanceData[i].normalMatrix = object.transform.normalMatrix();
-            instanceData[i].translation = object.transform.translation;
-            instanceData[i].scale = object.transform.scale;
-            instanceData[i].rotation = object.transform.rotation;
-            instanceData[i].modelId = object.modelId;
-            instanceData[i].materialId = object.textureId;
+            instanceCullData[i].instanceIndex = object.getId(); // since we have one instance per object, instance index == objectId
+            instanceCullData[i].indirectCommandID = object.modelId; // since we are creating one indirect command per model, indirect command id = object.modelId
         }
         // Two instance data buffers needed with duplicate data since we're double buffering
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             Buffer stagingBuffer{
                 device,
                 1,
-                instanceData.size() * sizeof(InstanceData),
+                instanceCullData.size() * sizeof(InstanceCullData),
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
 
             stagingBuffer.map();
-            stagingBuffer.writeToBuffer(instanceData.data());
+            stagingBuffer.writeToBuffer(instanceCullData.data());
 
-            instanceBuffers[i] = std::make_unique<Buffer>(
+            instanceCullBuffers[i] = std::make_unique<Buffer>(
                 device,
                 1,
                 stagingBuffer.getSize(),
@@ -243,7 +248,7 @@ namespace Renderer{
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             );
 
-            stagingBuffer.copyBuffer(instanceBuffers[i]->getBuffer(), instanceBuffers[i]->getSize());
+            stagingBuffer.copyBuffer(instanceCullBuffers[i]->getBuffer(), instanceCullBuffers[i]->getSize());
         }
     }
 
@@ -258,7 +263,6 @@ namespace Renderer{
         uniformData.projection = camera.getProjection();
         uniformData.view = camera.getView();
         uniformData.inverseView = camera.getInverseView();
-        uniformData.enableFrustumCulling = camera.enableFrustumCulling;
 
         uniformBuffers[frameIndex]->writeToBuffer(&uniformData);
         uniformBuffers[frameIndex]->flush();

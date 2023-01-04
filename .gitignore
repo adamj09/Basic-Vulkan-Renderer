@@ -44,3 +44,6 @@ _deps
 *.ninja_deps
 *.ninja_log
 *.ninja
+
+# VSCode
+.vscode

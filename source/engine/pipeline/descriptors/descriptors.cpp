@@ -43,9 +43,8 @@ namespace Renderer{
     }
 
     void DescriptorPool::updateSet(uint32_t setIndex, std::vector<VkWriteDescriptorSet> writes){
-        for(size_t i = 0; i < writes.size(); i++){
+        for(size_t i = 0; i < writes.size(); i++)
             writes[i].dstSet = allocatedSets[setIndex];
-        }
         vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
 
