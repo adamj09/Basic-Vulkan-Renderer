@@ -179,7 +179,7 @@ namespace Renderer{
                 if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
                     instanceCount++;
             }
-            // Create a new indexedIndirectCommand for each unique model testing testing
+            // Create a new indexedIndirectCommand for each unique model
             VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
