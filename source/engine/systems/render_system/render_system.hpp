@@ -86,6 +86,6 @@ namespace Renderer{
             std::vector<std::unique_ptr<Buffer>> uniformBuffers;
             uint32_t latestBinding = 0;
 
-            uint32_t totalInstanceCount;
+            uint32_t totalInstanceCount = 0;
     };
 }
