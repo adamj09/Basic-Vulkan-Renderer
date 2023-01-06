@@ -220,7 +220,7 @@ namespace Renderer{
 
         cullPipeline = std::make_unique<ComputePipeline>(
             device,
-            "../source/spirv_shaders/cull.comp.spv",
+            "../source/spirv_shaders/indirect_cull.comp.spv",
             cullPipelineLayout
         );
     }
