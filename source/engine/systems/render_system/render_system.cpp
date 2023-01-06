@@ -25,6 +25,10 @@ namespace Renderer{
 
     void RenderSystem::initializeRenderSystem(){
         setupScene();
+
+        createIndirectDrawCommands();
+        setupInstanceData();
+
         setupDescriptorSets();
 
         createComputePipelineLayout();
@@ -32,9 +36,6 @@ namespace Renderer{
 
         createGraphicsPipelineLayout();
         createGraphicsPipeline();
-
-        createIndirectCommands();
-        setupInstanceData();
     }
 
     void RenderSystem::setupScene(){
@@ -66,11 +67,98 @@ namespace Renderer{
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
 
+    void RenderSystem::createIndirectDrawCommands(){
+        indirectCommands.clear();
+        // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
+        // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
+        uint32_t totalInstanceCount = 0;
+        uint32_t previousInstanceCount = 0;
+        for(size_t i = 0; i < scene.models.size(); i++){
+            uint32_t instanceCount = 0;
+            // Get the number of objects that use this model, this will become the number of instances of this model.
+            for(size_t j = 0; j < scene.objects.size(); j++){
+                if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
+                    instanceCount++;
+            }
+            // Create a new indexedIndirectCommand for each unique model
+            VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
+            newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
+            newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
+            newIndexedIndirectCommand.firstInstance = previousInstanceCount; // Number of objects that used the previous model in the loop (offset by that number)
+            newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
+            indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
+
+            previousInstanceCount = instanceCount; // Updated at the end so the next command will use the current instanceCount value.
+            totalInstanceCount += instanceCount; // Add to the total instance count the current number of instances
+        }
+
+        // Send indirect commands to GPU memory (2 buffers are need for double-buffering)
+        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
+            Buffer stagingBuffer{
+                device,
+                1,
+                indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_SHARING_MODE_EXCLUSIVE,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            };
+
+            stagingBuffer.map();
+            stagingBuffer.writeToBuffer(indirectCommands.data());
+
+            indirectCommandsBuffers[i] = std::make_unique<Buffer>(
+                device,
+                1,
+                stagingBuffer.getSize(),
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_SHARING_MODE_EXCLUSIVE,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            );
+            
+            stagingBuffer.copyBuffer(indirectCommandsBuffers[i]->getBuffer(), indirectCommandsBuffers[i]->getSize());
+        }
+    }
+
+    void RenderSystem::setupInstanceData(){
+        instanceCullInfos.resize(totalInstanceCount);
+        // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
+        for(uint32_t i = 0; i < totalInstanceCount; i++){
+            auto object = scene.objects.at(i);
+            instanceCullInfos[i].instanceIndex = object.getId(); // since we have one instance per object, instance index == objectId
+            instanceCullInfos[i].indirectCommandID = object.modelId; // since we are creating one indirect command per model, indirect command id = object.modelId
+        }
+        // Two instance data buffers needed with duplicate data since we're double buffering
+        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
+            Buffer stagingBuffer{
+                device,
+                1,
+                instanceCullInfos.size() * sizeof(InstanceCullInfo),
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_SHARING_MODE_EXCLUSIVE,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            };
+
+            stagingBuffer.map();
+            stagingBuffer.writeToBuffer(instanceCullInfos.data());
+
+            instanceCullBuffers[i] = std::make_unique<Buffer>(
+                device,
+                1,
+                stagingBuffer.getSize(),
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_SHARING_MODE_EXCLUSIVE,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            );
+
+            stagingBuffer.copyBuffer(instanceCullBuffers[i]->getBuffer(), instanceCullBuffers[i]->getSize());
+        }
+    }
+
     void RenderSystem::setupDescriptorSets(){
         // Universal Matrix Data
         uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < uniformBuffers.size(); i++) {
-            uniformBuffers[i] = std::make_unique<Buffer>(device, 1, sizeof(UniformData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            uniformBuffers[i] = std::make_unique<Buffer>(device, 1, sizeof(UniformInfo), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
             uniformBuffers[i]->map();
         } 
         
@@ -87,7 +175,7 @@ namespace Renderer{
         renderSetLayout->buildLayout();
         // Cull set layout (compute shader)
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance data)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance Cull data)
         cullSetLayout->buildLayout();
 
         // Render Set
@@ -113,6 +201,28 @@ namespace Renderer{
             // add SwapChain::MAX_FRAMES_IN_FLIGHT to index to offset update index by the # of sets in the previous layout
             globalPool->updateSet(i + SwapChain::MAX_FRAMES_IN_FLIGHT, newWrites);
         }
+    }
+
+    void RenderSystem::createComputePipelineLayout(){
+        VkPipelineLayoutCreateInfo layoutInfo = {};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layoutInfo.setLayoutCount = 0;
+        layoutInfo.pSetLayouts = nullptr;
+        layoutInfo.pushConstantRangeCount = 0;
+        layoutInfo.pPushConstantRanges = nullptr;
+
+        if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &cullPipelineLayout) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create compute pipeline layout.");
+    }
+
+    void RenderSystem::createComputePipeline(){
+        assert(cullPipelineLayout != nullptr && "Cannot create compute pipeline before compute pipeline layout.");
+
+        cullPipeline = std::make_unique<ComputePipeline>(
+            device,
+            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/cull.comp.spv",
+            cullPipelineLayout
+        );
     }
 
     void RenderSystem::createGraphicsPipelineLayout(){
@@ -143,121 +253,6 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::createComputePipelineLayout(){
-        VkPipelineLayoutCreateInfo layoutInfo = {};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 0;
-        layoutInfo.pSetLayouts = nullptr;
-        layoutInfo.pushConstantRangeCount = 0;
-        layoutInfo.pPushConstantRanges = nullptr;
-
-        if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &cullPipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create compute pipeline layout.");
-    }
-
-    void RenderSystem::createComputePipeline(){
-        assert(cullPipelineLayout != nullptr && "Cannot create compute pipeline before compute pipeline layout.");
-
-        cullPipeline = std::make_unique<ComputePipeline>(
-            device,
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/cull.comp.spv",
-            cullPipelineLayout
-        );
-    }
-
-    void RenderSystem::createIndirectCommands(){
-        indirectCommands.clear();
-
-        // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
-        // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
-        uint32_t totalInstanceCount = 0;
-        uint32_t previousInstanceCount = 0;
-        for(size_t i = 0; i < scene.models.size(); i++){
-            uint32_t instanceCount = 0;
-            // Get the number of objects that use this model, this will become the number of instances of this model.
-            for(size_t j = 0; j < scene.objects.size(); j++){
-                if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
-                    instanceCount++;
-            }
-            // Create a new indexedIndirectCommand for each unique model
-            VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
-            newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
-            newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
-            newIndexedIndirectCommand.firstInstance = previousInstanceCount; // Number of objects that used the previous model in the loop (offset by that number)
-            newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
-            indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
-
-            previousInstanceCount = instanceCount; // Updated at the end so the next command will use the current instanceCount value.
-            totalInstanceCount += instanceCount; // Add to the total instance count the current number of instances
-        }
-
-        // Send indirect commands to GPU memory
-        Buffer stagingBuffer{
-            device,
-            1,
-            indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_SHARING_MODE_EXCLUSIVE,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-
-        stagingBuffer.map();
-        stagingBuffer.writeToBuffer(indirectCommands.data());
-
-        indirectCommandsBuffer = std::make_unique<Buffer>(
-            device,
-            1,
-            stagingBuffer.getSize(),
-            VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_SHARING_MODE_EXCLUSIVE,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        );
-
-        stagingBuffer.copyBuffer(indirectCommandsBuffer->getBuffer(), indirectCommandsBuffer->getSize());
-    }
-
-    void RenderSystem::setupInstanceData(){
-        instanceCullData.resize(totalInstanceCount);
-        
-        // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
-        for(uint32_t i = 0; i < totalInstanceCount; i++){
-            auto object = scene.objects.at(i);
-            instanceCullData[i].instanceIndex = object.getId(); // since we have one instance per object, instance index == objectId
-            instanceCullData[i].indirectCommandID = object.modelId; // since we are creating one indirect command per model, indirect command id = object.modelId
-        }
-        // Two instance data buffers needed with duplicate data since we're double buffering
-        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            Buffer stagingBuffer{
-                device,
-                1,
-                instanceCullData.size() * sizeof(InstanceCullData),
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
-
-            stagingBuffer.map();
-            stagingBuffer.writeToBuffer(instanceCullData.data());
-
-            instanceCullBuffers[i] = std::make_unique<Buffer>(
-                device,
-                1,
-                stagingBuffer.getSize(),
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            );
-
-            stagingBuffer.copyBuffer(instanceCullBuffers[i]->getBuffer(), instanceCullBuffers[i]->getSize());
-        }
-    }
-
-    void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
-        cullPipeline->bind(commandBuffer);
-        renderPipeline->bind(commandBuffer);
-        vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffer->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
-    }
-
     void RenderSystem::updateUniformBuffer(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
         uniformData.projection = camera.getProjection();
@@ -266,18 +261,12 @@ namespace Renderer{
 
         uniformBuffers[frameIndex]->writeToBuffer(&uniformData);
         uniformBuffers[frameIndex]->flush();
+    }
 
-        // TODO: move per-instance updates to the GPU as this method here is very slow when there is a large number of objects
-        // Update per-instance data
-        /*for(int i = 0; i < objectCount; i++){
-            auto object = scene.objects.at(i);
-
-            instanceData[i].modelMatrix = object.transform.mat4();
-            instanceData[i].normalMatrix = object.transform.normalMatrix();
-            
-            instanceBuffers[frameIndex]->writeToBuffer(&instanceData[i]);
-            instanceBuffers[frameIndex]->flush();
-        }*/
+    void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
+        cullPipeline->bind(commandBuffer);
+        renderPipeline->bind(commandBuffer);
+        vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
     }
 
     size_t RenderSystem::padUniformBufferSize(size_t originalSize){

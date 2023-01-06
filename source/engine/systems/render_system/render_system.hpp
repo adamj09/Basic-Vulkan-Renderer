@@ -13,17 +13,17 @@
 namespace Renderer{
     class RenderSystem{
         public:
-            struct ModelMatrixData{            
+            struct ModelMatrixInfo{            
                 glm::mat4 modelMatrix{1.f};
                 glm::mat4 normalMatrix{1.f};
             };
 
-            struct InstanceCullData{            // This struct is to be used on a per object/instance basis
+            struct InstanceCullInfo{            // This struct is to be used on a per object/instance basis
                 unsigned int instanceIndex;     // Instance index (also objectId)
                 unsigned int indirectCommandID; // IndirectCommandId (also modelId associated to this object)
             };
 
-            struct CullData{                    // Cull data, uniform across all instances
+            struct CullInfo{                    // Cull data, uniform across all instances
                 bool enableOcclusionCulling;
                 bool enableFrustumCulling;
 
@@ -31,7 +31,7 @@ namespace Renderer{
                 glm::vec4 frustumCorners[8];
             };
 
-            struct UniformData{                 // Camera data
+            struct UniformInfo{                 // Camera data
                 glm::mat4 projection{1.f};
                 glm::mat4 view{1.f};
                 glm::mat4 inverseView{1.f};
@@ -55,7 +55,7 @@ namespace Renderer{
             void createComputePipelineLayout();
             void createComputePipeline();
 
-            void createIndirectCommands();
+            void createIndirectDrawCommands();
             void setupInstanceData();
             
             size_t padUniformBufferSize(size_t originalSize);
@@ -73,9 +73,9 @@ namespace Renderer{
             VkPipelineLayout renderPipelineLayout;
 
             std::vector<std::unique_ptr<Buffer>> instanceCullBuffers;
-            std::vector<InstanceCullData> instanceCullData;
+            std::vector<InstanceCullInfo> instanceCullInfos;
 
-            std::unique_ptr<Buffer> indirectCommandsBuffer;
+            std::vector<std::unique_ptr<Buffer>> indirectCommandsBuffers;
             std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
             std::unique_ptr<DescriptorPool> globalPool;
