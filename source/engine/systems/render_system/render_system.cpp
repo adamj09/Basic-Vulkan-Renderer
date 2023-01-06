@@ -69,9 +69,9 @@ namespace Renderer{
 
     void RenderSystem::createIndirectDrawCommands(){
         indirectCommands.clear();
+        totalInstanceCount = 0;
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
         // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
-        uint32_t totalInstanceCount = 0;
         uint32_t previousInstanceCount = 0;
         for(size_t i = 0; i < scene.models.size(); i++){
             uint32_t instanceCount = 0;
@@ -220,7 +220,7 @@ namespace Renderer{
 
         cullPipeline = std::make_unique<ComputePipeline>(
             device,
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/cull.comp.spv",
+            "../source/spirv_shaders/cull.comp.spv",
             cullPipelineLayout
         );
     }
@@ -247,8 +247,8 @@ namespace Renderer{
         configInfo.renderPass = renderPass;
         renderPipeline = std::make_unique<GraphicsPipeline>(
             device,
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/main.vert.spv",
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/main.frag.spv",
+            "../source/spirv_shaders/main.vert.spv",
+            "../source/spirv_shaders/main.frag.spv",
             configInfo
         );
     }
