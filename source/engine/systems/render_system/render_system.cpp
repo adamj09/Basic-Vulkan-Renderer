@@ -25,6 +25,10 @@ namespace Renderer{
 
     void RenderSystem::initializeRenderSystem(){
         setupScene();
+
+        createIndirectCommands();
+        setupInstanceData();
+
         setupDescriptorSets();
 
         createComputePipelineLayout();
@@ -32,9 +36,6 @@ namespace Renderer{
 
         createGraphicsPipelineLayout();
         createGraphicsPipeline();
-
-        createIndirectCommands();
-        setupInstanceData();
     }
 
     void RenderSystem::setupScene(){
@@ -137,8 +138,8 @@ namespace Renderer{
         configInfo.renderPass = renderPass;
         renderPipeline = std::make_unique<GraphicsPipeline>(
             device,
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/main.vert.spv",
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/main.frag.spv",
+            "../source/spirv_shaders/main.vert.spv",
+            "../source/spirv_shaders/main.frag.spv",
             configInfo
         );
     }
@@ -157,10 +158,9 @@ namespace Renderer{
 
     void RenderSystem::createComputePipeline(){
         assert(cullPipelineLayout != nullptr && "Cannot create compute pipeline before compute pipeline layout.");
-
         cullPipeline = std::make_unique<ComputePipeline>(
             device,
-            "C:/Programming/C++_Projects/renderer/source/spirv_shaders/cull.comp.spv",
+            "../source/spirv_shaders/cull.comp.spv",
             cullPipelineLayout
         );
     }
@@ -170,7 +170,6 @@ namespace Renderer{
 
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
         // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
-        uint32_t totalInstanceCount = 0;
         uint32_t previousInstanceCount = 0;
         for(size_t i = 0; i < scene.models.size(); i++){
             uint32_t instanceCount = 0;

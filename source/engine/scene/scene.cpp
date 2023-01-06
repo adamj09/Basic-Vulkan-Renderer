@@ -14,20 +14,20 @@ namespace Renderer{
     }
 
     void Scene::loadModels(Device& device){
-        std::shared_ptr<Renderer::Model> spongebob = Renderer::Model::createModelFromFile(device, "C:/Programming/C++_Projects/renderer/source/models/spongebob.obj");
+        std::shared_ptr<Renderer::Model> spongebob = Renderer::Model::createModelFromFile(device, "../source/models/spongebob.obj");
         models[spongebob->getId()] = spongebob;
 
-        std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "C:/Programming/C++_Projects/renderer/source/models/smooth_vase.obj");
+        std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
         models[smoothVase->getId()] = smoothVase;
     }
 
     void Scene::loadTexturesWithSampler(Device& device, unsigned int samplerId){
-        assert(samplers.at(samplerId) != nullptr && "No sampler with given ID exists.");
-        std::shared_ptr<Renderer::Texture> spongeTexture = Renderer::Texture::createTextureFromFile(device, "C:/Programming/C++_Projects/renderer/source/textures/spongebob/spongebob.png");
+        assert(samplers.count(samplerId) != 0 && "No sampler with given ID exists.");
+        std::shared_ptr<Renderer::Texture> spongeTexture = Renderer::Texture::createTextureFromFile(device, "../source/textures/spongebob/spongebob.png");
         spongeTexture->samplerId = samplerId;
         textures[spongeTexture->getId()] = spongeTexture;
 
-        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "C:/Programming/C++_Projects/renderer/source/textures/milkyway.jpg");
+        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
         sampleImage->samplerId = samplerId;
         textures[sampleImage->getId()] = sampleImage;
     }
