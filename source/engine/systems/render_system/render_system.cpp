@@ -72,23 +72,21 @@ namespace Renderer{
         totalInstanceCount = 0;
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
         // TODO: glTF models may have multiple nodes with different meshes; may need to have multiple commands per object.
-        uint32_t previousInstanceCount = 0;
         for(size_t i = 0; i < scene.models.size(); i++){
             uint32_t instanceCount = 0;
             // Get the number of objects that use this model, this will become the number of instances of this model.
-            for(size_t j = 0; j < scene.objects.size(); j++){
+            for(size_t j = 0; j < scene.objects.size(); j++)
                 if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
                     instanceCount++;
-            }
+                    
             // Create a new indexedIndirectCommand for each unique model
             VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
-            newIndexedIndirectCommand.firstInstance = previousInstanceCount; // Number of objects that used the previous model in the loop (offset by that number)
+            newIndexedIndirectCommand.firstInstance = 0; // Should always be 0 at the moment (start draw command at first instance of this model)
             newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
             indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
 
-            previousInstanceCount = instanceCount; // Updated at the end so the next command will use the current instanceCount value.
             totalInstanceCount += instanceCount; // Add to the total instance count the current number of instances
         }
 
