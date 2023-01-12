@@ -26,7 +26,7 @@ namespace Renderer{
     void RenderSystem::initializeRenderSystem(){
         setupScene();
 
-        createIndirectDrawCommands();
+        //createIndirectDrawCommands();
         setupInstanceData();
 
         setupDescriptorSets();
@@ -84,6 +84,7 @@ namespace Renderer{
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
             newIndexedIndirectCommand.firstInstance = 0; // Should always be 0 at the moment (start draw command at first instance of this model)
+            newIndexedIndirectCommand.vertexOffset = 0;
             newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
             indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
 
@@ -96,24 +97,25 @@ namespace Renderer{
                 device,
                 1,
                 indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
 
             stagingBuffer.map();
-            stagingBuffer.writeToBuffer(indirectCommands.data());
+            stagingBuffer.writeToBuffer((void*)indirectCommands.data());
 
             indirectCommandsBuffers[i] = std::make_unique<Buffer>(
                 device,
                 1,
-                stagingBuffer.getSize(),
+                indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             );
+            indirectCommandsBuffers[i]->map();
             
-            stagingBuffer.copyBuffer(indirectCommandsBuffers[i]->getBuffer(), indirectCommandsBuffers[i]->getSize());
+            stagingBuffer.copyBuffer(indirectCommandsBuffers[0]->getBuffer(), indirectCommandsBuffers[0]->getSize());
         }
     }
 
@@ -142,7 +144,7 @@ namespace Renderer{
             instanceCullBuffers[i] = std::make_unique<Buffer>(
                 device,
                 1,
-                stagingBuffer.getSize(),
+                instanceCullInfos.size() * sizeof(InstanceCullInfo),
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
