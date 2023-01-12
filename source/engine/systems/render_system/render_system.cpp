@@ -26,7 +26,7 @@ namespace Renderer{
     void RenderSystem::initializeRenderSystem(){
         setupScene();
 
-        //createIndirectDrawCommands();
+        createIndirectDrawCommands();
         setupInstanceData();
 
         setupDescriptorSets();
@@ -84,26 +84,27 @@ namespace Renderer{
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
             newIndexedIndirectCommand.firstInstance = 0; // Should always be 0 at the moment (start draw command at first instance of this model)
-            newIndexedIndirectCommand.vertexOffset = 0;
+            newIndexedIndirectCommand.vertexOffset = 0; // Should always be 0
             newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
             indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
 
-            totalInstanceCount += instanceCount; // Add to the total instance count the current number of instances
+            totalInstanceCount += instanceCount; // Add to the total instance count to the current number of instances
         }
 
         // Send indirect commands to GPU memory (2 buffers are need for double-buffering)
+        indirectCommandsBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             Buffer stagingBuffer{
                 device,
                 1,
                 indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             };
 
             stagingBuffer.map();
-            stagingBuffer.writeToBuffer((void*)indirectCommands.data());
+            stagingBuffer.writeToBuffer(indirectCommands.data());
 
             indirectCommandsBuffers[i] = std::make_unique<Buffer>(
                 device,
@@ -111,11 +112,10 @@ namespace Renderer{
                 indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             );
-            indirectCommandsBuffers[i]->map();
             
-            stagingBuffer.copyBuffer(indirectCommandsBuffers[0]->getBuffer(), indirectCommandsBuffers[0]->getSize());
+            stagingBuffer.copyBuffer(indirectCommandsBuffers[i]->getBuffer(), indirectCommandsBuffers[i]->getSize());
         }
     }
 
@@ -128,6 +128,7 @@ namespace Renderer{
             instanceCullInfos[i].indirectCommandID = object.modelId; // since we are creating one indirect command per model, indirect command id = object.modelId
         }
         // Two instance data buffers needed with duplicate data since we're double buffering
+        instanceCullBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             Buffer stagingBuffer{
                 device,
@@ -197,7 +198,7 @@ namespace Renderer{
                 cullSetLayout->writeBuffer(0, &instanceCullBufferInfo)
             };
 
-            globalPool->allocateSet(renderSetLayout->getLayout());
+            globalPool->allocateSet(cullSetLayout->getLayout());
             // add SwapChain::MAX_FRAMES_IN_FLIGHT to index to offset update index by the # of sets in the previous layout
             globalPool->updateSet(i + SwapChain::MAX_FRAMES_IN_FLIGHT, newWrites);
         }
