@@ -33,7 +33,7 @@ namespace Renderer{
             DescriptorPool(Device& device);
             ~DescriptorPool();
 
-            std::vector<VkDescriptorSet> getSets() { return allocatedSets; }
+            std::unordered_map<uint32_t, VkDescriptorSet> getSets() { return allocatedSets; }
 
             void addPoolSize(VkDescriptorType type, uint32_t count);
             void buildPool(uint32_t maxSets, VkDescriptorPoolCreateFlags flags = 0);
@@ -44,6 +44,7 @@ namespace Renderer{
             Device& device;
             VkDescriptorPool descriptorPool;
             std::vector<VkDescriptorPoolSize> poolSizes;
-            std::vector<VkDescriptorSet> allocatedSets;
+            std::unordered_map<uint32_t, VkDescriptorSet> allocatedSets;
+            uint32_t latestSetIndex = 0;
     };
 }
