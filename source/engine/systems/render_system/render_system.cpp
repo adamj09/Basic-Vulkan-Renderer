@@ -195,7 +195,7 @@ namespace Renderer{
             // Fill instance buffer info
             VkDescriptorBufferInfo instanceCullBufferInfo = instanceCullBuffers[i]->descriptorInfo();
             std::vector<VkWriteDescriptorSet> newWrites {
-                cullSetLayout->writeBuffer(0, &instanceCullBufferInfo)
+                cullSetLayout->writeBuffer(1, &instanceCullBufferInfo)
             };
 
             globalPool->allocateSet(cullSetLayout->getLayout());
@@ -205,10 +205,11 @@ namespace Renderer{
     }
 
     void RenderSystem::createComputePipelineLayout(){
+        auto layout = cullSetLayout->getLayout();
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 0;
-        layoutInfo.pSetLayouts = nullptr;
+        layoutInfo.setLayoutCount = 1;
+        layoutInfo.pSetLayouts = &layout;
         layoutInfo.pushConstantRangeCount = 0;
         layoutInfo.pPushConstantRanges = nullptr;
 
@@ -218,7 +219,6 @@ namespace Renderer{
 
     void RenderSystem::createComputePipeline(){
         assert(cullPipelineLayout != nullptr && "Cannot create compute pipeline before compute pipeline layout.");
-
         cullPipeline = std::make_unique<ComputePipeline>(
             device,
             "../source/spirv_shaders/indirect_cull.comp.spv",
@@ -230,8 +230,8 @@ namespace Renderer{
         auto layout = renderSetLayout->getLayout();
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 0;
-        layoutInfo.pSetLayouts = nullptr;
+        layoutInfo.setLayoutCount = 1;
+        layoutInfo.pSetLayouts = &layout;
         layoutInfo.pushConstantRangeCount = 0;
         layoutInfo.pPushConstantRanges = nullptr;
 
@@ -241,7 +241,6 @@ namespace Renderer{
 
     void RenderSystem::createGraphicsPipeline(){
         assert(renderPipelineLayout != nullptr && "Cannot create graphics pipeline before graphics pipeline layout.");
-
         GraphicsPipelineConfigInfo configInfo = {};
         GraphicsPipeline::defaultPipelineConfigInfo(configInfo);
         configInfo.pipelineLayout = renderPipelineLayout;
