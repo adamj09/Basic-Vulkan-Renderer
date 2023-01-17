@@ -164,10 +164,13 @@ namespace Renderer{
         } 
         
         // Pool Setup
-        globalPool = std::make_unique<DescriptorPool>(device);
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline)
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Instance data (for cull pipeline) 
-        globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
+        renderPool = std::make_unique<DescriptorPool>(device);
+        renderPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline) 
+        renderPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
+
+        cullPool = std::make_unique<DescriptorPool>(device);
+        cullPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);
+        cullPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
         // Layout Setup (Bindings are set in order of when they are added)
         // Render set layout (vert and frag shaders)
@@ -176,31 +179,26 @@ namespace Renderer{
         renderSetLayout->buildLayout();
         // Cull set layout (compute shader)
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance Cull data)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance Cull data)
         cullSetLayout->buildLayout();
 
         // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
 
-            std::vector<VkWriteDescriptorSet> newWrites{
-                renderSetLayout->writeBuffer(0, &uniformBufferInfo)
+            std::vector<VkWriteDescriptorSet> renderLayoutWrites {
+                renderSetLayout->writeBuffer(0, &indirectBufferInfo)
+            };
+            std::vector<VkWriteDescriptorSet> cullLayoutWrites {
+                cullSetLayout->writeBuffer(0, &uniformBufferInfo)
             };
 
-            globalPool->allocateSet(renderSetLayout->getLayout());
-            globalPool->updateSet(i, newWrites);
-        }
+            renderPool->allocateSet(renderSetLayout->getLayout());
+            renderPool->updateSet(i, renderLayoutWrites);
 
-        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            // Fill instance buffer info
-            VkDescriptorBufferInfo instanceCullBufferInfo = instanceCullBuffers[i]->descriptorInfo();
-            std::vector<VkWriteDescriptorSet> newWrites {
-                cullSetLayout->writeBuffer(1, &instanceCullBufferInfo)
-            };
-
-            globalPool->allocateSet(cullSetLayout->getLayout());
-            // add SwapChain::MAX_FRAMES_IN_FLIGHT to index to offset update index by the # of sets in the previous layout
-            globalPool->updateSet(i + SwapChain::MAX_FRAMES_IN_FLIGHT, newWrites);
+            cullPool->allocateSet(cullSetLayout->getLayout());
+            cullPool->updateSet(i, cullLayoutWrites);
         }
     }
 
