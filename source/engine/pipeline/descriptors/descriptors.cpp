@@ -30,6 +30,7 @@ namespace Renderer{
     }
 
     void DescriptorPool::allocateSet(VkDescriptorSetLayout descriptorSetLayout){
+        uint32_t setIndex = allocatedSets.size();
         VkDescriptorSet set;
         VkDescriptorSetAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -39,8 +40,7 @@ namespace Renderer{
 
         if(vkAllocateDescriptorSets(device.getDevice(), &allocInfo, &set) != VK_SUCCESS)
             throw std::runtime_error("Failed to allocate descriptor set.");
-        allocatedSets.emplace(latestSetIndex, set);
-        latestSetIndex++;
+        allocatedSets.emplace(setIndex, set);
     }
 
     void DescriptorPool::updateSet(uint32_t setIndex, std::vector<VkWriteDescriptorSet> writes){

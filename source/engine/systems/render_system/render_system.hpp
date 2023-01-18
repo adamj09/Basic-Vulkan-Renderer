@@ -78,8 +78,7 @@ namespace Renderer{
             std::vector<std::unique_ptr<Buffer>> indirectCommandsBuffers;
             std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
-            std::unique_ptr<DescriptorPool> renderPool;
-            std::unique_ptr<DescriptorPool> cullPool;
+            std::unique_ptr<DescriptorPool> globalPool;
 
             std::unique_ptr<DescriptorSetLayout> cullSetLayout;
             std::unique_ptr<DescriptorSetLayout> renderSetLayout;

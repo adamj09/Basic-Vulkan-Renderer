@@ -110,7 +110,7 @@ namespace Renderer{
                 device,
                 1,
                 indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             );
@@ -164,41 +164,39 @@ namespace Renderer{
         } 
         
         // Pool Setup
-        renderPool = std::make_unique<DescriptorPool>(device);
-        renderPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline) 
-        renderPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
-
-        cullPool = std::make_unique<DescriptorPool>(device);
-        cullPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);
-        cullPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
+        globalPool = std::make_unique<DescriptorPool>(device);
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline) 
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Indirect draw buffers (for gpu-created draw commands)
+        globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
         // Layout Setup (Bindings are set in order of when they are added)
         // Render set layout (vert and frag shaders)
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
+        renderSetLayout->addBinding(SwapChain::MAX_FRAMES_IN_FLIGHT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
         renderSetLayout->buildLayout();
-        // Cull set layout (compute shader)
+
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 0 (Instance Cull data)
+        cullSetLayout->addBinding(SwapChain::MAX_FRAMES_IN_FLIGHT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);    // binding 0 (Indirect draw data)
         cullSetLayout->buildLayout();
 
         // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
+            uint32_t setIndex = i * SwapChain::MAX_FRAMES_IN_FLIGHT;
             VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
             VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
 
             std::vector<VkWriteDescriptorSet> renderLayoutWrites {
-                renderSetLayout->writeBuffer(0, &indirectBufferInfo)
+                renderSetLayout->writeBuffer(0, &uniformBufferInfo)
             };
             std::vector<VkWriteDescriptorSet> cullLayoutWrites {
-                cullSetLayout->writeBuffer(0, &uniformBufferInfo)
+                cullSetLayout->writeBuffer(0, &indirectBufferInfo)
             };
 
-            renderPool->allocateSet(renderSetLayout->getLayout());
-            renderPool->updateSet(i, renderLayoutWrites);
+            globalPool->allocateSet(renderSetLayout->getLayout());
+            globalPool->updateSet(setIndex, renderLayoutWrites);
 
-            cullPool->allocateSet(cullSetLayout->getLayout());
-            cullPool->updateSet(i, cullLayoutWrites);
+            globalPool->allocateSet(cullSetLayout->getLayout());
+            globalPool->updateSet(setIndex + 1, cullLayoutWrites);
         }
     }
 
