@@ -52,7 +52,7 @@ namespace Application{
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects
-                //renderSystem.drawScene(commandBuffer, frameIndex);
+                //renderSystem.drawScene(commandBuffer, frameIndex); // DONT RUN THIS FUNCTION FOR NOW AS IT CURRENTLY CRASHES THE GPU DRIVERS
                 // End Renderpass
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame();
