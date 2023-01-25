@@ -23,24 +23,22 @@ namespace Renderer{
                 unsigned int indirectCommandID; // IndirectCommandId (also modelId associated to this object)
             };
 
-            struct CullInfo{                    // Cull data, uniform across all instances
+            struct UniformInfo{                 // Uniform per frame data
+                glm::mat4 projection{1.f};
+                glm::mat4 view{1.f};
+                glm::mat4 inverseView{1.f};
+
                 bool enableOcclusionCulling;
                 bool enableFrustumCulling;
 
                 glm::vec4 frustumPlanes[6];
                 glm::vec4 frustumCorners[8];
-            };
-
-            struct UniformInfo{                 // Camera data
-                glm::mat4 projection{1.f};
-                glm::mat4 view{1.f};
-                glm::mat4 inverseView{1.f};
             } uniformData;
 
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateUniformBuffer(Camera camera, uint32_t frameIndex);
+            void updateCameraData(Camera camera, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:
@@ -82,6 +80,8 @@ namespace Renderer{
 
             std::unique_ptr<DescriptorSetLayout> cullSetLayout;
             std::unique_ptr<DescriptorSetLayout> renderSetLayout;
+
+            std::unique_ptr<Buffer> globalIndexBuffer;
 
             std::vector<std::unique_ptr<Buffer>> uniformBuffers;
             uint32_t latestBinding = 0;

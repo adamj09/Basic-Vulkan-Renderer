@@ -177,6 +177,7 @@ namespace Renderer{
 
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);    // binding 0 (Indirect draw data)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);    // binding 1 (Global cull data)
         cullSetLayout->buildLayout();
 
         // Render Set
@@ -189,7 +190,8 @@ namespace Renderer{
                 renderSetLayout->writeBuffer(0, &uniformBufferInfo)
             };
             std::vector<VkWriteDescriptorSet> cullLayoutWrites {
-                cullSetLayout->writeBuffer(0, &indirectBufferInfo)
+                cullSetLayout->writeBuffer(0, &indirectBufferInfo),
+                cullSetLayout->writeBuffer(1, &uniformBufferInfo)
             };
 
             globalPool->allocateSet(renderSetLayout->getLayout());
@@ -249,11 +251,14 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateUniformBuffer(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateCameraData(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
         uniformData.projection = camera.getProjection();
         uniformData.view = camera.getView();
         uniformData.inverseView = camera.getInverseView();
+
+        uniformData.enableFrustumCulling = true;
+        uniformData.enableOcclusionCulling = true;
 
         uniformBuffers[frameIndex]->writeToBuffer(&uniformData);
         uniformBuffers[frameIndex]->flush();
