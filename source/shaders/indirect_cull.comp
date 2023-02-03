@@ -1,5 +1,19 @@
 #version 460
 
+layout(set = 1, binding = 1) uniform globalData{
+    mat4 projection;
+    mat4 view;
+    mat4 inverseView;
+
+    bool enableOcclusionCulling;
+    bool enableFrustumCulling;
+
+    vec4 frustumPlanes[6];
+    vec4 frustumCorners[8];
+
+    uint instanceCount;
+} globalUBO;
+
 void main(){
     
 }

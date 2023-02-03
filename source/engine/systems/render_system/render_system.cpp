@@ -183,8 +183,8 @@ namespace Renderer{
         // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             uint32_t setIndex = i * SwapChain::MAX_FRAMES_IN_FLIGHT;
-            VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
             VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
 
             std::vector<VkWriteDescriptorSet> renderLayoutWrites {
                 renderSetLayout->writeBuffer(0, &uniformBufferInfo)
@@ -257,8 +257,18 @@ namespace Renderer{
         uniformData.view = camera.getView();
         uniformData.inverseView = camera.getInverseView();
 
+        uniformData.frustumPlanes[0] = glm::vec4();
+        uniformData.frustumPlanes[1] = glm::vec4();
+        uniformData.frustumPlanes[2] = glm::vec4();
+        uniformData.frustumPlanes[3] = glm::vec4();
+        uniformData.frustumPlanes[4] = glm::vec4();
+        uniformData.frustumPlanes[5] = glm::vec4();
+        uniformData.frustumPlanes[6] = glm::vec4();
+        
         uniformData.enableFrustumCulling = true;
         uniformData.enableOcclusionCulling = true;
+
+        uniformData.instanceCount = totalInstanceCount;
 
         uniformBuffers[frameIndex]->writeToBuffer(&uniformData);
         uniformBuffers[frameIndex]->flush();
