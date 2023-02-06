@@ -30,8 +30,8 @@ namespace Renderer{
 
                 bool enableOcclusionCulling;
                 bool enableFrustumCulling;
-                glm::vec4 frustumPlanes[6];
-                glm::vec4 frustumCorners[8];
+
+                Frustum cameraFrustum;
 
                 uint32_t instanceCount;         // Number of objects to be drawn
             } uniformData;

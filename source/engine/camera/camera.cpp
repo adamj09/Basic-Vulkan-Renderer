@@ -1,6 +1,13 @@
 #include "camera.hpp"
 
 namespace Renderer{
+    Camera::Camera(float fovy, float aspect, float near, float far)
+    : fovy{fovy}, aspect{aspect}, near{near}, far{far}{
+        setPerspectiveProjection(fovy, aspect, near, far);
+    }
+
+    Camera::~Camera(){}
+
     void Camera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far) {
         projectionMatrix = glm::mat4{1.0f};
         projectionMatrix[0][0] = 2.f / (right - left);
@@ -9,6 +16,7 @@ namespace Renderer{
         projectionMatrix[3][0] = -(right + left) / (right - left);
         projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
         projectionMatrix[3][2] = -near / (far - near);
+        usingPerspectiveProjection = false;
     }
 
     void Camera::setPerspectiveProjection(float fovy, float aspect, float near, float far) {
@@ -20,6 +28,7 @@ namespace Renderer{
         projectionMatrix[2][2] = far / (far - near);
         projectionMatrix[2][3] = 1.f;
         projectionMatrix[3][2] = -(far * near) / (far - near);
+        usingPerspectiveProjection = true;
     }
 
     void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) {
@@ -97,5 +106,21 @@ namespace Renderer{
         inverseViewMatrix[3][0] = position.x;
         inverseViewMatrix[3][1] = position.y;
         inverseViewMatrix[3][2] = position.z;
-    }      
+    }
+
+    Frustum Camera::createFrustumFromCamera(float fovy, float aspect, float near, float far){
+        assert(usingPerspectiveProjection == true && "Cannot create camera frustum unless using perspective projection.");
+        Frustum newFrustum;
+        const float halfVSide = far * tanf(fovy * .5f);
+        const float halfHSide = halfVSide * aspect;
+        const glm::vec3 frontMultFar = far * cam.Front;
+
+        newFrustum.nearPlane = { cam.Position + near * cam.Front, cam.Front };
+        newFrustum.farPlane = { cam.Position + frontMultFar, -cam.Front };
+        newFrustum.rightPlane = { cam.Position, glm::cross(frontMultFar - cam.Right * halfHSide, cam.Up) };
+        newFrustum.leftPlane = { cam.Position, glm::cross(cam.Up,frontMultFar + cam.Right * halfHSide) };
+        newFrustum.topPlane = { cam.Position, glm::cross(cam.Right, frontMultFar - cam.Up * halfVSide) };
+        newFrustum.bottomPlane = { cam.Position, glm::cross(frontMultFar + cam.Up * halfVSide, cam.Right) };
+        return newFrustum;
+    }     
 }

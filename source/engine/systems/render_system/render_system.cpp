@@ -256,14 +256,6 @@ namespace Renderer{
         uniformData.projection = camera.getProjection();
         uniformData.view = camera.getView();
         uniformData.inverseView = camera.getInverseView();
-
-        uniformData.frustumPlanes[0] = glm::vec4();
-        uniformData.frustumPlanes[1] = glm::vec4();
-        uniformData.frustumPlanes[2] = glm::vec4();
-        uniformData.frustumPlanes[3] = glm::vec4();
-        uniformData.frustumPlanes[4] = glm::vec4();
-        uniformData.frustumPlanes[5] = glm::vec4();
-        uniformData.frustumPlanes[6] = glm::vec4();
         
         uniformData.enableFrustumCulling = true;
         uniformData.enableOcclusionCulling = true;

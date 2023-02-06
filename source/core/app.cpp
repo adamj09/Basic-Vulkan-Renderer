@@ -17,7 +17,8 @@ namespace Application{
 
     void App::run(){
         // Camera creation
-        Renderer::Camera camera{};
+        float aspect = renderer.getAspectRatio();
+        Renderer::Camera camera{glm::radians(90.f), aspect, 0.1f, 100.f};
         Renderer::KeyboardMovementController cameraController{};
         auto viewerObject = Renderer::Object::createObject();
         viewerObject.transform.translation.z = -2.5f;
@@ -42,8 +43,6 @@ namespace Application{
             cameraController.lookSpeed = (0.0035f);
             cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
             camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
-            float aspect = renderer.getAspectRatio();
-            camera.setPerspectiveProjection(glm::radians(90.f), aspect, 0.1f, 100.f);
 
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
