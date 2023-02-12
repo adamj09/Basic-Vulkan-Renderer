@@ -1,13 +1,9 @@
 #include "camera.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <limits>
+
 namespace Renderer{
-    Camera::Camera(float fovy, float aspect, float near, float far)
-    : fovy{fovy}, aspect{aspect}, near{near}, far{far}{
-        setPerspectiveProjection(fovy, aspect, near, far);
-    }
-
-    Camera::~Camera(){}
-
     void Camera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far) {
         projectionMatrix = glm::mat4{1.0f};
         projectionMatrix[0][0] = 2.f / (right - left);
@@ -16,19 +12,47 @@ namespace Renderer{
         projectionMatrix[3][0] = -(right + left) / (right - left);
         projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
         projectionMatrix[3][2] = -near / (far - near);
-        usingPerspectiveProjection = false;
+        
+        createViewBounds(PROJECTION_TYPE_ORTHOGRAPHIC);
     }
 
-    void Camera::setPerspectiveProjection(float fovy, float aspect, float near, float far) {
+    void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
         assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
-        const float tanHalfFovy = tan(fovy / 2.f);
+        const float tanHalfFovy = tan(newFovy / 2.f);
         projectionMatrix = glm::mat4{0.0f};
         projectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);
         projectionMatrix[1][1] = 1.f / (tanHalfFovy);
         projectionMatrix[2][2] = far / (far - near);
         projectionMatrix[2][3] = 1.f;
         projectionMatrix[3][2] = -(far * near) / (far - near);
-        usingPerspectiveProjection = true;
+
+        createViewBounds(PROJECTION_TYPE_PERSPECTIVE);
+    }
+
+    void Camera::createViewBounds(ProjectionType projectionType){
+        // normalized view bounding box, corners represented by 4 vec4s (w is always 1 as it is used for transformations)
+        glm::vec4 corners[8]{
+            glm::vec4{-1.f, -1.f, -1.f, 1.f},   // A    Top left front corner
+            glm::vec4{-1.f, -1.f, 1.f, 1.f},    // B    Top left back corner
+            glm::vec4{1.f, -1.f, 1.f, 1.f},     // C    Top right back corner
+            glm::vec4{1.f, -1.f, -1.f, 1.f},    // D    Top right front corner
+            glm::vec4{-1.f, 1.f, -1.f, 1.f},    // E    Bottom left front corner
+            glm::vec4{-1.f, 1.f, 1.f, 1.f},     // F    Bottom left back corner
+            glm::vec4{1.f, 1.f, 1.f, 1.f},      // G    Bottom right back corner
+            glm::vec4{1.f, 1.f, -1.f, 1.f},     // H    Bottom right front corner
+        };
+        // left off here, need to create frustum with world space coordinates
+        if(projectionType == PROJECTION_TYPE_PERSPECTIVE){
+            viewFrustum.topPlane;
+            viewFrustum.bottomPlane;
+            viewFrustum.leftPlane;
+            viewFrustum.rightPlane;
+            viewFrustum.nearPlane;
+            viewFrustum.farPlane;
+        }
+        else{
+
+        }
     }
 
     void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) {
@@ -108,19 +132,35 @@ namespace Renderer{
         inverseViewMatrix[3][2] = position.z;
     }
 
-    Frustum Camera::createFrustumFromCamera(float fovy, float aspect, float near, float far){
-        assert(usingPerspectiveProjection == true && "Cannot create camera frustum unless using perspective projection.");
-        Frustum newFrustum;
-        const float halfVSide = far * tanf(fovy * .5f);
-        const float halfHSide = halfVSide * aspect;
-        const glm::vec3 frontMultFar = far * cam.Front;
+    void Camera::moveInPlaneXZ(GLFWwindow* window, float dt) {
+        glm::vec3 rotate{0};
+        if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
+        if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
+        if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
+        if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
-        newFrustum.nearPlane = { cam.Position + near * cam.Front, cam.Front };
-        newFrustum.farPlane = { cam.Position + frontMultFar, -cam.Front };
-        newFrustum.rightPlane = { cam.Position, glm::cross(frontMultFar - cam.Right * halfHSide, cam.Up) };
-        newFrustum.leftPlane = { cam.Position, glm::cross(cam.Up,frontMultFar + cam.Right * halfHSide) };
-        newFrustum.topPlane = { cam.Position, glm::cross(cam.Right, frontMultFar - cam.Up * halfVSide) };
-        newFrustum.bottomPlane = { cam.Position, glm::cross(frontMultFar + cam.Up * halfVSide, cam.Right) };
-        return newFrustum;
-    }     
+        if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
+            rotation += lookSpeed * dt * glm::normalize(rotate);
+        }
+
+        // limit pitch values between about +/- 85ish degrees
+        rotation.x = glm::clamp(rotation.x, -1.5f, 1.5f);
+        rotation.y = glm::mod(rotation.y, glm::two_pi<float>());
+
+        float yaw = rotation.y;
+        forwardDir = {sin(yaw), 0.f, cos(yaw)};
+        rightDir = {forwardDir.z, 0.f, -forwardDir.x};
+        upDir = {0.f, -1.f, 0.f};
+
+        glm::vec3 moveDir{0.f};
+        if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += forwardDir;
+        if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= forwardDir;
+        if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
+        if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
+        if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
+        if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
+
+        if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon())
+            translation += moveSpeed * dt * glm::normalize(moveDir);
+    }
 }

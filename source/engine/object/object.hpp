@@ -18,6 +18,7 @@ namespace Renderer{
         glm::mat4 mat4();   // model matrix
         glm::mat3 normalMatrix(); // normal matrix (used for lighting)
     };
+    
     //TODO: maybe add a point light object to separate light functionality from objects.
     struct PointLightComponent{
         bool emitLight = false;         // Choose whether to emit light, if false, all variables below are irrelevant.

@@ -7,7 +7,6 @@
 
 #include "engine/systems/render_system/render_system.hpp"
 #include "engine/camera/camera.hpp"
-#include "engine/camera/camera_controller/camera_controller.hpp"
 #include "engine/material/texture/texture.hpp"
 #include "engine/material/sampler/sampler.hpp"
 
@@ -18,10 +17,7 @@ namespace Application{
     void App::run(){
         // Camera creation
         float aspect = renderer.getAspectRatio();
-        Renderer::Camera camera{glm::radians(90.f), aspect, 0.1f, 100.f};
-        Renderer::KeyboardMovementController cameraController{};
-        auto viewerObject = Renderer::Object::createObject();
-        viewerObject.transform.translation.z = -2.5f;
+        Renderer::Camera camera{};
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
@@ -38,11 +34,10 @@ namespace Application{
                 intervalTime = 0;
             }
 
-            // Camera Setup
-            cameraController.moveSpeed = (0.0035f); //TODO: should probably add a "look sensitivity" option, also need to add mouse controls alongside existing keyboard controls
-            cameraController.lookSpeed = (0.0035f);
-            cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
-            camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+            camera.moveSpeed = (0.0035f);
+            camera.lookSpeed = (0.0035f);
+            camera.setPerspectiveProjection(glm::radians(90.f), aspect, 0.1f, 100.f);
+            camera.moveInPlaneXZ(window.getGLFWwindow(), frameTime);
 
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
