@@ -21,14 +21,11 @@ namespace Renderer{
 
         Plane topPlane;
         Plane bottomPlane;
+        void reset();
     };
 
     class Camera{
         public:
-            enum ProjectionType {
-                PROJECTION_TYPE_PERSPECTIVE = 0,
-                PROJECTION_TYPE_ORTHOGRAPHIC = 1
-            };
 
             struct KeyMappings {
                 int moveLeft = GLFW_KEY_A;
@@ -59,7 +56,7 @@ namespace Renderer{
             float lookSpeed{0};
 
         private:
-            void createViewBounds(ProjectionType projectionType);
+            void createViewBounds();
 
             float aspect;   // aspect ratio
             float near;     // near bounds, anything closer than this from the camera is not displayed

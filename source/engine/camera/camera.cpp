@@ -4,6 +4,16 @@
 #include <limits>
 
 namespace Renderer{
+
+    void Frustum::reset(){
+        nearPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        farPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        leftPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        rightPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        topPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        bottomPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+    }
+    
     void Camera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far) {
         projectionMatrix = glm::mat4{1.0f};
         projectionMatrix[0][0] = 2.f / (right - left);
@@ -12,8 +22,7 @@ namespace Renderer{
         projectionMatrix[3][0] = -(right + left) / (right - left);
         projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
         projectionMatrix[3][2] = -near / (far - near);
-        
-        createViewBounds(PROJECTION_TYPE_ORTHOGRAPHIC);
+        createViewBounds();
     }
 
     void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
@@ -25,34 +34,29 @@ namespace Renderer{
         projectionMatrix[2][2] = far / (far - near);
         projectionMatrix[2][3] = 1.f;
         projectionMatrix[3][2] = -(far * near) / (far - near);
-
-        createViewBounds(PROJECTION_TYPE_PERSPECTIVE);
+        createViewBounds();
     }
 
-    void Camera::createViewBounds(ProjectionType projectionType){
-        // normalized view bounding box, corners represented by 4 vec4s (w is always 1 as it is used for transformations)
+    void Camera::createViewBounds(){
+        // View bounding box (normalized coordinates converted to world space coordinates)
+        // Corners are represented by 4 vec4s (w is always 1 as it is used for transformations)
         glm::vec4 corners[8]{
-            glm::vec4{-1.f, -1.f, -1.f, 1.f},   // A    Top left front corner
-            glm::vec4{-1.f, -1.f, 1.f, 1.f},    // B    Top left back corner
-            glm::vec4{1.f, -1.f, 1.f, 1.f},     // C    Top right back corner
-            glm::vec4{1.f, -1.f, -1.f, 1.f},    // D    Top right front corner
-            glm::vec4{-1.f, 1.f, -1.f, 1.f},    // E    Bottom left front corner
-            glm::vec4{-1.f, 1.f, 1.f, 1.f},     // F    Bottom left back corner
-            glm::vec4{1.f, 1.f, 1.f, 1.f},      // G    Bottom right back corner
-            glm::vec4{1.f, 1.f, -1.f, 1.f},     // H    Bottom right front corner
+            (glm::vec4{-1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],  // A    Top left front corner
+            (glm::vec4{-1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // B    Top left back corner
+            (glm::vec4{1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],    // C    Top right back corner
+            (glm::vec4{1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // D    Top right front corner
+            (glm::vec4{-1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // E    Bottom left front corner
+            (glm::vec4{-1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],    // F    Bottom left back corner
+            (glm::vec4{1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],     // G    Bottom right back corner
+            (glm::vec4{1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3]     // H    Bottom right front corner
         };
-        // left off here, need to create frustum with world space coordinates
-        if(projectionType == PROJECTION_TYPE_PERSPECTIVE){
-            viewFrustum.topPlane;
-            viewFrustum.bottomPlane;
-            viewFrustum.leftPlane;
-            viewFrustum.rightPlane;
-            viewFrustum.nearPlane;
-            viewFrustum.farPlane;
-        }
-        else{
 
-        }
+        viewFrustum.topPlane = {glm::vec3{}, 0.f};
+        viewFrustum.bottomPlane = {glm::vec3{}, 0.f};
+        viewFrustum.leftPlane = {glm::vec3{}, 0.f};
+        viewFrustum.rightPlane = {glm::vec3{}, 0.f};
+        viewFrustum.nearPlane = {glm::vec3{}, 0.f};
+        viewFrustum.farPlane = {glm::vec3{}, 0.f};
     }
 
     void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) {
