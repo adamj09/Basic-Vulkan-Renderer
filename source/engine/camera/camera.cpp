@@ -50,7 +50,7 @@ namespace Renderer{
             (glm::vec4{1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],     // G    Bottom right back corner
             (glm::vec4{1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3]     // H    Bottom right front corner
         };
-
+        
         viewFrustum.topPlane = {glm::vec3{}, 0.f};
         viewFrustum.bottomPlane = {glm::vec3{}, 0.f};
         viewFrustum.leftPlane = {glm::vec3{}, 0.f};
