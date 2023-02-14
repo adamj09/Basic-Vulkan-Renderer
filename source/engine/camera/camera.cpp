@@ -41,17 +41,20 @@ namespace Renderer{
         // View bounding box (normalized coordinates converted to world space coordinates)
         // Corners are represented by 4 vec4s (w is always 1 as it is used for transformations)
         glm::vec4 corners[8]{
-            (glm::vec4{-1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],  // A    Top left front corner
-            (glm::vec4{-1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // B    Top left back corner
-            (glm::vec4{1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],    // C    Top right back corner
-            (glm::vec4{1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // D    Top right front corner
-            (glm::vec4{-1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],   // E    Bottom left front corner
-            (glm::vec4{-1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],    // F    Bottom left back corner
-            (glm::vec4{1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3],     // G    Bottom right back corner
-            (glm::vec4{1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3]     // H    Bottom right front corner
+            (glm::vec4{-1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,  // A    Top left front corner
+            (glm::vec4{-1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,   // B    Top left back corner
+            (glm::vec4{1.f, -1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,    // C    Top right back corner
+            (glm::vec4{1.f, -1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,   // D    Top right front corner
+            (glm::vec4{-1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,   // E    Bottom left front corner
+            (glm::vec4{-1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,    // F    Bottom left back corner
+            (glm::vec4{1.f, 1.f, 1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w,     // G    Bottom right back corner
+            (glm::vec4{1.f, 1.f, -1.f, 1.f} * inverseViewMatrix) / inverseViewMatrix[3].w     // H    Bottom right front corner
         };
-        
-        viewFrustum.topPlane = {glm::vec3{}, 0.f};
+
+        viewFrustum.topPlane = {glm::vec3{glm::normalize(glm::cross(
+            glm::vec3{corners[1].x - corners[0].x, corners[1].y - corners[0].y, corners[1].z - corners[0].z}, 
+            glm::vec3{corners[1].x - corners[2].x, corners[1].y - corners[2].y, corners[1].z - corners[2].z}))}, 
+            0.f};
         viewFrustum.bottomPlane = {glm::vec3{}, 0.f};
         viewFrustum.leftPlane = {glm::vec3{}, 0.f};
         viewFrustum.rightPlane = {glm::vec3{}, 0.f};
