@@ -26,7 +26,6 @@ namespace Renderer{
 
     class Camera{
         public:
-
             struct KeyMappings {
                 int moveLeft = GLFW_KEY_A;
                 int moveRight = GLFW_KEY_D;
@@ -75,6 +74,6 @@ namespace Renderer{
 
             KeyMappings keys{};
 
-            Frustum viewFrustum;
+            Frustum viewBounds;
     };
 }
