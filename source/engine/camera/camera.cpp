@@ -15,32 +15,35 @@ namespace Renderer{
         bottomPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
     }
     
-    void Camera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far) {
+    void Camera::setOrthographicProjection(float newLeft, float newRight, float newTop, float newBottom, float newNear, float newFar) {
         projectionMatrix = glm::mat4{1.0f};
-        projectionMatrix[0][0] = 2.f / (right - left);
-        projectionMatrix[1][1] = 2.f / (bottom - top);
-        projectionMatrix[2][2] = 1.f / (far - near);
-        projectionMatrix[3][0] = -(right + left) / (right - left);
-        projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
-        projectionMatrix[3][2] = -near / (far - near);
+        projectionMatrix[0][0] = 2.f / (newRight - newLeft);
+        projectionMatrix[1][1] = 2.f / (newBottom - newTop);
+        projectionMatrix[2][2] = 1.f / (newFar - newNear);
+        projectionMatrix[3][0] = -(newRight + newLeft) / (newRight - newLeft);
+        projectionMatrix[3][1] = -(newBottom + newTop) / (newBottom - newTop);
+        projectionMatrix[3][2] = -newNear / (newFar - newNear);
+        orthographicComp = {
+            
+        };
         viewBounds.reset();
-        createViewBounds();
+        createViewBounds(PROJECTION_TYPE_ORTHOGRAPHIC);
     }
 
     void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
-        assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
+        assert(glm::abs(newAspect - std::numeric_limits<float>::epsilon()) > 0.0f);
         const float tanHalfFovy = tan(newFovy / 2.f);
         projectionMatrix = glm::mat4{0.0f};
-        projectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);
+        projectionMatrix[0][0] = 1.f / (newAspect * tanHalfFovy);
         projectionMatrix[1][1] = 1.f / (tanHalfFovy);
-        projectionMatrix[2][2] = far / (far - near);
+        projectionMatrix[2][2] = newFar / (newFar - newNear);
         projectionMatrix[2][3] = 1.f;
-        projectionMatrix[3][2] = -(far * near) / (far - near);
+        projectionMatrix[3][2] = -(newFar * newNear) / (newFar - newNear);
         viewBounds.reset();
-        createViewBounds();
+        createViewBounds(PROJECTION_TYPE_PERSPECTIVE);
     }
 
-    void Camera::createViewBounds(){
+    void Camera::createViewBounds(ProjectionType type){
         // View bounding box (normalized coordinates converted to world space coordinates)
         // Corners are represented by 4 vec4s (w is always 1 as it is used for transformations)
         glm::vec4 corners[8]{
@@ -62,33 +65,47 @@ namespace Renderer{
         (corners[4] * inverseViewMatrix) / inverseViewMatrix[3].w;  
         (corners[5] * inverseViewMatrix) / inverseViewMatrix[3].w;  
         (corners[6] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[7] * inverseViewMatrix) / inverseViewMatrix[3].w;  
+        (corners[7] * inverseViewMatrix) / inverseViewMatrix[3].w;
+        float distTop = 0.f, distBottom = 0.f, distLeft = 0.f, distRight = 0.f, distNear = 0.f, distFar = 0.f;  
+
+        if(type == PROJECTION_TYPE_PERSPECTIVE){
+            distFar = perspectiveComp.far;
+            distNear = perspectiveComp.near;
+        }
+        else if (type == PROJECTION_TYPE_ORTHOGRAPHIC){
+            distTop = orthographicComp.top;
+            distBottom = orthographicComp.bottom;
+            distFar = orthographicComp.far;
+            distNear = orthographicComp.near;
+            distLeft = orthographicComp.left;
+            distRight = orthographicComp.right;
+        }
 
         // Convert box above to frustum, defined by 6 planes in point-normal form
         viewBounds.topPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[1].x - corners[0].x, corners[1].y - corners[0].y, corners[1].z - corners[0].z},
             glm::vec3{corners[1].x - corners[2].x, corners[1].y - corners[2].y, corners[1].z - corners[2].z}))}, 
-            0.f};                                                                                             
+            distTop};                                                                                             
         viewBounds.bottomPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[7].x - corners[4].x, corners[7].y - corners[4].y, corners[7].z - corners[4].z},   
             glm::vec3{corners[7].x - corners[6].x, corners[7].y - corners[6].y, corners[7].z - corners[6].z}))},
-            0.f};                                                                                            
+            distBottom};                                                                                            
         viewBounds.leftPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[1].x - corners[0].x, corners[1].y - corners[0].y, corners[1].z - corners[0].z},   
             glm::vec3{corners[1].x - corners[5].x, corners[1].y - corners[5].y, corners[1].z - corners[5].z}))},
-            0.f};                                                                                              
+            distLeft};                                                                                              
         viewBounds.rightPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[3].x - corners[2].x, corners[3].y - corners[2].y, corners[3].z - corners[2].z}, 
             glm::vec3{corners[3].x - corners[7].x, corners[3].y - corners[7].y, corners[3].z - corners[7].z}))},
-            0.f};
+            distRight};
         viewBounds.nearPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[0].x - corners[3].x, corners[0].y - corners[3].y, corners[0].z - corners[3].z}, 
             glm::vec3{corners[3].x - corners[7].x, corners[3].y - corners[7].y, corners[3].z - corners[7].z}))},
-            near};
+            distNear};
         viewBounds.farPlane = {glm::vec3{glm::normalize(glm::cross(
             glm::vec3{corners[1].x - corners[2].x, corners[1].y - corners[2].y, corners[1].z - corners[2].z}, 
             glm::vec3{corners[1].x - corners[7].x, corners[3].y - corners[7].y, corners[3].z - corners[7].z}))},
-            far};
+            distFar};
     }
 
     void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) {
