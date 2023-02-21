@@ -12,7 +12,7 @@ namespace Renderer{
         float distance = 0.f;
     };
 
-    struct Frustum {
+    struct BoundingBox {
         Plane nearPlane;
         Plane farPlane;
 
@@ -26,27 +26,6 @@ namespace Renderer{
 
     class Camera{
         public:
-            enum ProjectionType{
-                PROJECTION_TYPE_PERSPECTIVE = 0,
-                PROJECTION_TYPE_ORTHOGRAPHIC = 1
-            };
-
-            struct OrthographicComponents{
-                // All of these floats are distances relative to the camera
-                float left;     // left bounds
-                float right;    // right bounds
-                float top;      // top bounds
-                float bottom;   // bottom bounds
-                float near;     // near bounds
-                float far;      // far bounds
-            } orthographicComp;
-
-            struct PerspectiveComponents{
-                float aspect;   // aspect ratio
-                float near;     // near bounds
-                float far;      // far bounds
-            } perspectiveComp;
-
             struct KeyMappings {
                 int moveLeft = GLFW_KEY_A;
                 int moveRight = GLFW_KEY_D;
@@ -76,7 +55,8 @@ namespace Renderer{
             float lookSpeed{0};
 
         private:
-            void createViewBounds(ProjectionType type);
+            void setFrustumViewBounds(float aspect, float near, float far);
+            void setBoxViewBounds(float left, float right, float top, float bottom, float near, float far);
 
             glm::mat4 projectionMatrix{1.f};
             glm::mat4 viewMatrix{1.f};
@@ -91,6 +71,6 @@ namespace Renderer{
 
             KeyMappings keys{};
 
-            Frustum viewBounds;
+            BoundingBox viewBounds;
     };
 }

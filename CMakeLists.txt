@@ -28,7 +28,7 @@ if (DEFINED VULKAN_SDK_PATH)
   set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
   set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib")
   set(Vulkan_FOUND "True")
-else() # If Vulkan path is not found in .env.cmake if will fall back to cmake's find_package() function
+else() # If Vulkan path is not found in .env.cmake it will fall back to cmake's find_package() function
   message(STATUS "Using find_package function to find vulkan...")
   find_package(Vulkan REQUIRED)
   message(STATUS "Found Vulkan: $ENV{VULKAN_SDK}")

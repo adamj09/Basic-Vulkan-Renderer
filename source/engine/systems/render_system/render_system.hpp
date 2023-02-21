@@ -31,15 +31,13 @@ namespace Renderer{
                 bool enableOcclusionCulling;
                 bool enableFrustumCulling;
 
-                Frustum cameraFrustum;
-
                 uint32_t instanceCount;         // Number of objects to be drawn
             } uniformData;
 
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateCameraData(Camera camera, uint32_t frameIndex);
+            void updateCamera(Camera camera, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:
@@ -58,7 +56,6 @@ namespace Renderer{
             void setupInstanceData();
             
             size_t padUniformBufferSize(size_t originalSize);
-            uint32_t maxMiplevels();
 
             Device& device;
             VkRenderPass renderPass;

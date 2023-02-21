@@ -251,7 +251,7 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateCameraData(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateCamera(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
         uniformData.projection = camera.getProjection();
         uniformData.view = camera.getView();
@@ -282,19 +282,4 @@ namespace Renderer{
             alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
 	    return alignedSize;
     }
-
-    /*uint32_t RenderSystem::maxMiplevels(){
-        uint32_t greatestMipLevelCount = 0;
-        std::vector<uint32_t> mipLevels;
-        for(int i = 0; i < objects.size(); i++){
-            auto obj = objects.at(i);
-            if(obj.textureImage == nullptr) continue;
-            mipLevels.push_back(obj.textureImage->getMipLevels());
-        }
-        for(int i = 0; i < mipLevels.size(); i++)
-            if(mipLevels[i] > greatestMipLevelCount)
-                greatestMipLevelCount = mipLevels[i];
-
-        return greatestMipLevelCount;
-    }*/
 }
