@@ -251,14 +251,17 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateCamera(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateDescriptorInfo(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
         uniformData.projection = camera.getProjection();
         uniformData.view = camera.getView();
         uniformData.inverseView = camera.getInverseView();
-        
-        uniformData.enableFrustumCulling = true;
+
+        uniformData.enableFrustumCulling = camera.enableFrustumCulling;
         uniformData.enableOcclusionCulling = true;
+
+        if(uniformData.enableFrustumCulling)
+            uniformData.cameraViewBoundingBox = camera.createFrustumViewBounds();
 
         uniformData.instanceCount = totalInstanceCount;
 

@@ -18,6 +18,7 @@ namespace Application{
         // Camera creation
         float aspect = renderer.getAspectRatio();
         Renderer::Camera camera{};
+        camera.enableFrustumCulling = true;
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
@@ -42,7 +43,7 @@ namespace Application{
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
-                renderSystem.updateCameraData(camera, frameIndex);
+                renderSystem.updateDescriptorInfo(camera, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects

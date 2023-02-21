@@ -28,6 +28,8 @@ namespace Renderer{
                 glm::mat4 view{1.f};
                 glm::mat4 inverseView{1.f};
 
+                BoundingBox cameraViewBoundingBox;
+
                 bool enableOcclusionCulling;
                 bool enableFrustumCulling;
 
@@ -37,7 +39,7 @@ namespace Renderer{
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateCamera(Camera camera, uint32_t frameIndex);
+            void updateDescriptorInfo(Camera camera, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:

@@ -7,15 +7,15 @@
 namespace Renderer{
 
     void BoundingBox::reset(){
-        nearPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
-        farPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
-        leftPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
-        rightPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
-        topPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
-        bottomPlane = {glm::vec3{0.f, 1.f, 0.f}, 0.f};
+        nearPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        farPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        leftPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        rightPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        topPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        bottomPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
     }
     
-    void Camera::setOrthographicProjection(float newLeft, float newRight, float newTop, float newBottom, float newNear, float newFar) {
+    /*void Camera::setOrthographicProjection(float newLeft, float newRight, float newTop, float newBottom, float newNear, float newFar) {
         projectionMatrix = glm::mat4{1.0f};
         projectionMatrix[0][0] = 2.f / (newRight - newLeft);
         projectionMatrix[1][1] = 2.f / (newBottom - newTop);
@@ -23,8 +23,7 @@ namespace Renderer{
         projectionMatrix[3][0] = -(newRight + newLeft) / (newRight - newLeft);
         projectionMatrix[3][1] = -(newBottom + newTop) / (newBottom - newTop);
         projectionMatrix[3][2] = -newNear / (newFar - newNear);
-        setBoxViewBounds(newLeft, newRight, newTop, newBottom, newNear, newFar);
-    }
+    }*/
 
     void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
         assert(glm::abs(newAspect - std::numeric_limits<float>::epsilon()) > 0.0f);
@@ -35,85 +34,31 @@ namespace Renderer{
         projectionMatrix[2][2] = newFar / (newFar - newNear);
         projectionMatrix[2][3] = 1.f;
         projectionMatrix[3][2] = -(newFar * newNear) / (newFar - newNear);
-        setFrustumViewBounds(newAspect, newNear, newFar);
+
+        fovy = newFovy;
+        aspect = newAspect;
+        near = newNear;
+        far = newFar;
     }
 
-    void Camera::setBoxViewBounds(float left, float right, float top, float bottom, float near, float far){
+    BoundingBox Camera::createFrustumViewBounds(){
+        assert(aspect != 0 && "Cannot create frustum view bounds with invalid aspect ratio.");
+        BoundingBox viewBounds;
         viewBounds.reset();
 
-        glm::vec4 corners[8]{
-            glm::vec4{-1.f, -1.f, -1.f, 1.f},  // A 0  Top left front corner
-            glm::vec4{-1.f, -1.f, 1.f, 1.f},   // B 1  Top left back corner
-            glm::vec4{1.f, -1.f, 1.f, 1.f},    // C 2  Top right back corner
-            glm::vec4{1.f, -1.f, -1.f, 1.f},   // D 3  Top right front corner
-            glm::vec4{-1.f, 1.f, -1.f, 1.f},   // E 4  Bottom left front corner
-            glm::vec4{-1.f, 1.f, 1.f, 1.f},    // F 5  Bottom left back corner
-            glm::vec4{1.f, 1.f, 1.f, 1.f},     // G 6  Bottom right back corner
-            glm::vec4{1.f, 1.f, -1.f, 1.f}     // H 7  Bottom right front corner
-        };
-
-        // Transform the box corners
-        (corners[0] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[1] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[2] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[3] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[4] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[5] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[6] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[7] * inverseViewMatrix) / inverseViewMatrix[3].w;
-    }
-
-    void Camera::setFrustumViewBounds(float aspect, float near, float far){
-        viewBounds.reset();
-
-        glm::vec4 corners[8]{
-            glm::vec4{-1.f, -1.f, -1.f, 1.f},  // A 0  Top left front corner
-            glm::vec4{-1.f, -1.f, 1.f, 1.f},   // B 1  Top left back corner
-            glm::vec4{1.f, -1.f, 1.f, 1.f},    // C 2  Top right back corner
-            glm::vec4{1.f, -1.f, -1.f, 1.f},   // D 3  Top right front corner
-            glm::vec4{-1.f, 1.f, -1.f, 1.f},   // E 4  Bottom left front corner
-            glm::vec4{-1.f, 1.f, 1.f, 1.f},    // F 5  Bottom left back corner
-            glm::vec4{1.f, 1.f, 1.f, 1.f},     // G 6  Bottom right back corner
-            glm::vec4{1.f, 1.f, -1.f, 1.f}     // H 7  Bottom right front corner
-        };
-
-        // Transform the box corners
-        (corners[0] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[1] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[2] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[3] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[4] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[5] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[6] * inverseViewMatrix) / inverseViewMatrix[3].w;  
-        (corners[7] * inverseViewMatrix) / inverseViewMatrix[3].w;
-
-        glm::vec3 nearNormal = glm::cross(
-            glm::vec3{corners[0].x - corners[4].x, corners[0].y - corners[4].y, corners[0].z - corners[4].z},   
-            glm::vec3{corners[0].x - corners[3].x, corners[0].y - corners[3].y, corners[0].z - corners[3].z});
-        glm::vec3 farNormal = glm::cross(
-            glm::vec3{corners[2].x - corners[6].x, corners[2].y - corners[6].y, corners[2].z - corners[6].z}, 
-            glm::vec3{corners[2].x - corners[1].x, corners[2].y - corners[1].y, corners[2].z - corners[1].z});
-        glm::vec3 topNormal = glm::cross(
-            glm::vec3{corners[3].x - corners[0].x, corners[3].y - corners[0].y, corners[3].z - corners[0].z}, 
-            glm::vec3{corners[3].x - corners[2].x, corners[3].y - corners[2].y, corners[3].z - corners[2].z});
-        glm::vec3 bottomNormal = glm::cross(
-            glm::vec3{corners[7].x - corners[4].x, corners[7].y - corners[4].y, corners[7].z - corners[4].z}, 
-            glm::vec3{corners[7].x - corners[6].x, corners[7].y - corners[6].y, corners[7].z - corners[6].z});
-        glm::vec3 rightNormal = glm::cross(
-            glm::vec3{corners[7].x - corners[3].x, corners[7].y - corners[3].y, corners[7].z - corners[3].z}, 
-            glm::vec3{corners[7].x - corners[6].x, corners[7].y - corners[6].y, corners[7].z - corners[6].z});
-        glm::vec3 leftNormal = glm::cross(
-            glm::vec3{corners[0].x - corners[1].x, corners[0].y - corners[1].y, corners[0].z - corners[1].z}, 
-            glm::vec3{corners[0].x - corners[4].x, corners[0].y - corners[4].y, corners[0].z - corners[4].z});
-
+        const float halfVSide = far * tanf(fovy / 2.f);
+        const float halfHSide = aspect * halfVSide;
+        glm::vec3 forwardMultFar = far * forwardDir;
         glm::vec3 position = glm::vec3(inverseViewMatrix[3]);
 
-        viewBounds.nearPlane = {nearNormal, near};
-        viewBounds.farPlane = {farNormal, far};
-        viewBounds.topPlane = {topNormal, 0.f};
-        viewBounds.bottomPlane = {bottomNormal, 0.f};
-        viewBounds.rightPlane = {rightNormal, 0.f};
-        viewBounds.leftPlane = {leftNormal, 0.f};
+        viewBounds.nearPlane = {position + near * forwardDir, forwardDir};
+        viewBounds.farPlane = {position + forwardMultFar, -forwardDir};
+        viewBounds.topPlane = {position, glm::cross(rightDir, forwardDir - upDir * halfVSide)};
+        viewBounds.bottomPlane = {position, glm::cross(forwardMultFar + upDir * halfVSide, rightDir)};
+        viewBounds.rightPlane = {position, glm::cross(forwardMultFar - rightDir * halfHSide, upDir)};
+        viewBounds.leftPlane = {position, glm::cross(upDir, forwardMultFar + rightDir * halfHSide)};
+
+        return viewBounds;
     }
 
     void Camera::setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up) {
