@@ -25,7 +25,7 @@ namespace Application{
 
         while(!window.shouldClose()){
             glfwPollEvents();
-            // Frametime Calculation
+            
             auto newTime = std::chrono::steady_clock::now();
             float frameTime = std::chrono::duration<float, std::chrono::milliseconds::period>(newTime - currentTime).count();
             currentTime = newTime;

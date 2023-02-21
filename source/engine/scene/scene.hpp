@@ -21,15 +21,21 @@ namespace Renderer{
 
             void createObject();
             void createSampler(Device& device, Sampler::SamplerConfig config);
+            void createDrawIndirectCommands();
+
+            void drawScene();
 
             // Total objects in scene, can contain copies
             Object::Map objects;
 
-            // Samplers (created by user indirectly and can be shared between textures)
+            // Samplers, does not contain copies (created by user indirectly and can be shared between textures)
             std::unordered_map<unsigned int, std::shared_ptr<Sampler>> samplers;
 
-            // Raw assets (loaded from files the user specifies)
+            // Raw assets, do not contain copies (loaded from files the user specifies)
             std::unordered_map<unsigned int, std::shared_ptr<Model>> models;
             std::unordered_map<unsigned int, std::shared_ptr<Texture>> textures;
+
+            std::vector<VkDrawIndexedIndirectCommand> drawIndexedCommands;
+            std::vector<VkDrawIndirectCommand> drawCommands;
     };
 }
