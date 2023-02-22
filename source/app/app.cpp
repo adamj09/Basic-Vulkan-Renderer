@@ -43,7 +43,7 @@ namespace Application{
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
-                renderSystem.updateDescriptorInfo(camera, frameIndex);
+                renderSystem.updateScene(camera, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects

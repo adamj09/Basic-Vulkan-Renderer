@@ -26,9 +26,9 @@ namespace Renderer{
     void RenderSystem::initializeRenderSystem(){
         setupScene();
 
-        createIndirectDrawCommands();
-        setupInstanceData();
+        createDrawIndirectCommands();
 
+        setupBuffers();
         setupDescriptorSets();
 
         createComputePipelineLayout();
@@ -54,20 +54,20 @@ namespace Renderer{
 
         // spongebob object
         scene.createObject();
-        scene.objects.at(0).modelId = 0; // spongebob model
-        scene.objects.at(0).textureId = 0; // spongebob texture
+        scene.objects.at(0).objectInfo.modelId = 0; // spongebob model
+        scene.objects.at(0).objectInfo.diffuseId = 0; // spongebob texture
         scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
         // sample object
         scene.createObject();
-        scene.objects.at(1).modelId = 1; // sample model
-        scene.objects.at(1).textureId = 1; // sampler texture
+        scene.objects.at(1).objectInfo.modelId = 1; // sample model
+        scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
         scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
 
-    void RenderSystem::createIndirectDrawCommands(){
+    void RenderSystem::createDrawIndirectCommands(){
         indirectCommands.clear();
         totalInstanceCount = 0;
         // TODO: sort through models that don't have indices and create commands for them and draw them seperately.
@@ -76,7 +76,7 @@ namespace Renderer{
             uint32_t instanceCount = 0;
             // Get the number of objects that use this model, this will become the number of instances of this model.
             for(size_t j = 0; j < scene.objects.size(); j++)
-                if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
+                if(scene.objects.at(j).objectInfo.modelId == scene.models.at(i)->getId())
                     instanceCount++;
                     
             // Create a new indexedIndirectCommand for each unique model
@@ -85,7 +85,7 @@ namespace Renderer{
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
             newIndexedIndirectCommand.firstInstance = 0; // Should always be 0 at the moment (start draw command at first instance of this model)
             newIndexedIndirectCommand.vertexOffset = 0; // Should always be 0
-            newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).modelId)->getIndexCount(); // Number of indices the unique model has
+            newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).objectInfo.modelId)->getIndexCount(); // Number of indices the unique model has
             indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
 
             totalInstanceCount += instanceCount; // Add to the total instance count to the current number of instances
@@ -119,79 +119,62 @@ namespace Renderer{
         }
     }
 
-    void RenderSystem::setupInstanceData(){
-        instanceCullInfos.resize(totalInstanceCount);
-        // Info set once as for all objects as the default, this info can be updated in the updateScene() function.
-        for(uint32_t i = 0; i < totalInstanceCount; i++){
-            auto object = scene.objects.at(i);
-            instanceCullInfos[i].instanceIndex = object.getId(); // since we have one instance per object, instance index == objectId
-            instanceCullInfos[i].indirectCommandID = object.modelId; // since we are creating one indirect command per model, indirect command id = object.modelId
+    void RenderSystem::setupBuffers(){
+        // Per-object info buffers
+        objectInfos.resize(totalInstanceCount);
+        for(size_t i = 0 ; i < totalInstanceCount; i++)
+            objectInfos.push_back(scene.objects.at(i).objectInfo);
+
+        objectInfoDynamicAlignment = padUniformBufferSize(sizeof(Object::ObjectInfo));
+        size_t bufferSize = objectInfoDynamicAlignment * scene.objects.size();
+
+        objectInfoBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+        for(int i =0; i < objectInfoBuffers.size(); i++){
+            objectInfoBuffers[i] = std::make_unique<Buffer>(device, 1, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            objectInfoBuffers[i]->map();
         }
-        // Two instance data buffers needed with duplicate data since we're double buffering
-        instanceCullBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            Buffer stagingBuffer{
-                device,
-                1,
-                instanceCullInfos.size() * sizeof(InstanceCullInfo),
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
 
-            stagingBuffer.map();
-            stagingBuffer.writeToBuffer(instanceCullInfos.data());
-
-            instanceCullBuffers[i] = std::make_unique<Buffer>(
-                device,
-                1,
-                instanceCullInfos.size() * sizeof(InstanceCullInfo),
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            );
-
-            stagingBuffer.copyBuffer(instanceCullBuffers[i]->getBuffer(), instanceCullBuffers[i]->getSize());
-        }
+        // Uniform scene buffers
+        sceneUniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+        for (int i = 0; i < sceneUniformBuffers.size(); i++) {
+            sceneUniformBuffers[i] = std::make_unique<Buffer>(device, 1, sizeof(Scene::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            sceneUniformBuffers[i]->map();
+        } 
     }
 
     void RenderSystem::setupDescriptorSets(){
-        // Universal Matrix Data
-        uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for (int i = 0; i < uniformBuffers.size(); i++) {
-            uniformBuffers[i] = std::make_unique<Buffer>(device, 1, sizeof(UniformInfo), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            uniformBuffers[i]->map();
-        } 
-        
         // Pool Setup
         globalPool = std::make_unique<DescriptorPool>(device);
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Uniform data (for rendrer pipeline) 
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);    // Indirect draw buffers (for gpu-created draw commands)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Indirect draw buffers (for gpu-created draw commands)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Uniform scene info (for render pipeline)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, SwapChain::MAX_FRAMES_IN_FLIGHT);        // Per-object info
         globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT * 2); // Multiply max frames in flight by number of sets
 
         // Layout Setup (Bindings are set in order of when they are added)
         // Render set layout (vert and frag shaders)
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 0 (Uniform data)
+        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);            // binding 0 (Uniform scene info)
+        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 1 (Per-object info)
         renderSetLayout->buildLayout();
 
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);    // binding 0 (Indirect draw data)
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);    // binding 1 (Global cull data)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 0 (Uniform scene info)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 1 (Indirect draw data)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 2 (Per-object info)
         cullSetLayout->buildLayout();
-
+        // LEFT OFF HERE, NEED TO ADD WRITES FOR PER-OBJECT INFOS
         // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             uint32_t setIndex = i * SwapChain::MAX_FRAMES_IN_FLIGHT;
             VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
-            VkDescriptorBufferInfo uniformBufferInfo = uniformBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo sceneUniformBufferInfo = sceneUniformBuffers[i]->descriptorInfo();
 
             std::vector<VkWriteDescriptorSet> renderLayoutWrites {
-                renderSetLayout->writeBuffer(0, &uniformBufferInfo)
+                renderSetLayout->writeBuffer(0, &sceneUniformBufferInfo)
             };
             std::vector<VkWriteDescriptorSet> cullLayoutWrites {
                 cullSetLayout->writeBuffer(0, &indirectBufferInfo),
-                cullSetLayout->writeBuffer(1, &uniformBufferInfo)
+                cullSetLayout->writeBuffer(1, &sceneUniformBufferInfo)
             };
 
             globalPool->allocateSet(renderSetLayout->getLayout());
@@ -251,22 +234,22 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateDescriptorInfo(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateScene(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
-        uniformData.projection = camera.getProjection();
-        uniformData.view = camera.getView();
-        uniformData.inverseView = camera.getInverseView();
+        scene.sceneUniform.projection = camera.getProjection();
+        scene.sceneUniform.view = camera.getView();
+        scene.sceneUniform.inverseView = camera.getInverseView();
 
-        uniformData.enableFrustumCulling = camera.enableFrustumCulling;
-        uniformData.enableOcclusionCulling = true;
+        scene.sceneUniform.enableFrustumCulling = camera.enableFrustumCulling;
+        scene.sceneUniform.enableOcclusionCulling = true;
 
-        if(uniformData.enableFrustumCulling)
-            uniformData.cameraViewBoundingBox = camera.createFrustumViewBounds();
+        if(scene.sceneUniform.enableFrustumCulling)
+            scene.sceneUniform.viewBoundingBox = camera.createFrustumViewBounds();
 
-        uniformData.instanceCount = totalInstanceCount;
+        scene.sceneUniform.instanceCount = totalInstanceCount;
 
-        uniformBuffers[frameIndex]->writeToBuffer(&uniformData);
-        uniformBuffers[frameIndex]->flush();
+        sceneUniformBuffers[frameIndex]->writeToBuffer(&scene.sceneUniform);
+        sceneUniformBuffers[frameIndex]->flush();
     }
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){

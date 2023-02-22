@@ -18,34 +18,20 @@ namespace Renderer{
                 glm::mat4 normalMatrix{1.f};
             };
 
-            struct InstanceCullInfo{            // This struct is to be used on a per object/instance basis
-                unsigned int instanceIndex;     // Instance index (also objectId)
-                unsigned int indirectCommandID; // IndirectCommandId (also modelId associated to this object)
-            };
-
-            struct UniformInfo{                 // Uniform per frame data
-                glm::mat4 projection{1.f};
-                glm::mat4 view{1.f};
-                glm::mat4 inverseView{1.f};
-
-                BoundingBox cameraViewBoundingBox;
-
-                bool enableOcclusionCulling;
-                bool enableFrustumCulling;
-
-                uint32_t instanceCount;         // Number of objects to be drawn
-            } uniformData;
-
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateDescriptorInfo(Camera camera, uint32_t frameIndex);
+            void updateScene(Camera camera, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:
             void initializeRenderSystem();
 
             void setupScene();
+
+            void createDrawIndirectCommands();
+            void setupBuffers();
+
             void setupDescriptorSets();
 
             void createGraphicsPipelineLayout();
@@ -53,9 +39,6 @@ namespace Renderer{
 
             void createComputePipelineLayout();
             void createComputePipeline();
-
-            void createIndirectDrawCommands();
-            void setupInstanceData();
             
             size_t padUniformBufferSize(size_t originalSize);
 
@@ -70,8 +53,9 @@ namespace Renderer{
             std::unique_ptr<GraphicsPipeline> renderPipeline;
             VkPipelineLayout renderPipelineLayout;
 
-            std::vector<std::unique_ptr<Buffer>> instanceCullBuffers;
-            std::vector<InstanceCullInfo> instanceCullInfos;
+            std::vector<std::unique_ptr<Buffer>> objectInfoBuffers;
+            std::vector<Object::ObjectInfo> objectInfos;
+            uint32_t objectInfoDynamicAlignment;
 
             std::vector<std::unique_ptr<Buffer>> indirectCommandsBuffers;
             std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
@@ -83,7 +67,7 @@ namespace Renderer{
 
             std::unique_ptr<Buffer> globalIndexBuffer;
 
-            std::vector<std::unique_ptr<Buffer>> uniformBuffers;
+            std::vector<std::unique_ptr<Buffer>> sceneUniformBuffers;
             uint32_t latestBinding = 0;
 
             uint32_t totalInstanceCount = 0;

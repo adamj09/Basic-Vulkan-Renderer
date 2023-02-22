@@ -31,6 +31,11 @@ namespace Renderer{
 
     class Object{
         public:
+            struct ObjectInfo{
+                unsigned int modelId;
+                unsigned int diffuseId;
+            } objectInfo;
+
             using Map = std::unordered_map<unsigned int, Object>;
 
             static Object createObject() {
@@ -43,8 +48,6 @@ namespace Renderer{
             TransformComponent transform{};
 
             PointLightComponent pointLight{};
-            unsigned int modelId;
-            unsigned int textureId;
 
         private:
             Object(unsigned int objectId) : id{objectId} {}
