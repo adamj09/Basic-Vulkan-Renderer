@@ -23,7 +23,7 @@ namespace Renderer{
             void createSampler(Device& device, Sampler::SamplerConfig config);
             void createDrawIndirectCommands();
 
-            void drawScene();
+            void drawScene(VkCommandBuffer commandBuffer);
 
             // Total objects in scene, can contain copies
             Object::Map objects;

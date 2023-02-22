@@ -42,8 +42,8 @@ namespace Renderer{
         samplers[newSampler->getId()] = newSampler;
     }
 
-    void Scene::drawScene(){
-        //vkCmdDrawIndexedIndirect();
+    void Scene::drawScene(VkCommandBuffer commandBuffer){
+        //vkCmdDrawIndexedIndirect(commandBuffer);
     }
 
     void Scene::createDrawIndirectCommands(){
