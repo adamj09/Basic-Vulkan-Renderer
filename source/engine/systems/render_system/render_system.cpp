@@ -132,6 +132,10 @@ namespace Renderer{
         for(int i =0; i < objectInfoBuffers.size(); i++){
             objectInfoBuffers[i] = std::make_unique<Buffer>(device, 1, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
             objectInfoBuffers[i]->map();
+            for(size_t j = 0; j < scene.objects.size(); j++){
+                objectInfoBuffers[i]->writeToBuffer(&scene.objects.at(j).objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * j));
+                objectInfoBuffers[i]->flush();
+            }
         }
 
         // Uniform scene buffers
@@ -162,19 +166,23 @@ namespace Renderer{
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 1 (Indirect draw data)
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 2 (Per-object info)
         cullSetLayout->buildLayout();
-        // LEFT OFF HERE, NEED TO ADD WRITES FOR PER-OBJECT INFOS
+
         // Render Set
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             uint32_t setIndex = i * SwapChain::MAX_FRAMES_IN_FLIGHT;
             VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
             VkDescriptorBufferInfo sceneUniformBufferInfo = sceneUniformBuffers[i]->descriptorInfo();
+            VkDescriptorBufferInfo objectBufferInfo = objectInfoBuffers[i]->descriptorInfo();
+            objectBufferInfo.range = objectInfoDynamicAlignment;
 
             std::vector<VkWriteDescriptorSet> renderLayoutWrites {
-                renderSetLayout->writeBuffer(0, &sceneUniformBufferInfo)
+                renderSetLayout->writeBuffer(0, &sceneUniformBufferInfo),
+                renderSetLayout->writeBuffer(1, &objectBufferInfo)
             };
             std::vector<VkWriteDescriptorSet> cullLayoutWrites {
                 cullSetLayout->writeBuffer(0, &indirectBufferInfo),
-                cullSetLayout->writeBuffer(1, &sceneUniformBufferInfo)
+                cullSetLayout->writeBuffer(1, &sceneUniformBufferInfo),
+                cullSetLayout->writeBuffer(2, &objectBufferInfo)
             };
 
             globalPool->allocateSet(renderSetLayout->getLayout());
