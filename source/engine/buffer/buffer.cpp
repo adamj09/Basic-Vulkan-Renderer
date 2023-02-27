@@ -95,6 +95,26 @@ namespace Renderer{
         device.endSingleTimeCommands(commandBuffer);
     }
 
+    void Buffer::writeDeviceLocalBuffer(void* data, VkDeviceSize size, VkDeviceSize offset){
+        Buffer stagingBuffer{
+            device,
+            count,
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
+
+        stagingBuffer.map();
+        stagingBuffer.writeToBuffer(data, size, offset);
+
+        stagingBuffer.copyBuffer(buffer, bufferSize);
+    }
+
+    VkDescriptorBufferInfo Buffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
+        return VkDescriptorBufferInfo{buffer, offset, size};
+    }
+
     VkResult Buffer::flush(VkDeviceSize size, VkDeviceSize offset) {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -108,9 +128,5 @@ namespace Renderer{
         if (minOffsetAlignment > 0)
             return (size + minOffsetAlignment - 1) & ~(minOffsetAlignment - 1);
         return size;
-    }
-
-    VkDescriptorBufferInfo Buffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
-        return VkDescriptorBufferInfo{buffer, offset, size};
     }
 }

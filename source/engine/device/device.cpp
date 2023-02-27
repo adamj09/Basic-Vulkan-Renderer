@@ -117,6 +117,7 @@ namespace Renderer{
         bool hasRequiredFeatures = 
             supportedFeatures.samplerAnisotropy &&
             supportedFeatures.shaderSampledImageArrayDynamicIndexing && 
+            supportedFeatures.fillModeNonSolid &&
             supportedFeatures.multiDrawIndirect;
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate && hasRequiredFeatures;
@@ -155,9 +156,9 @@ namespace Renderer{
 
         int i = 0;
         for (const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && VK_QUEUE_COMPUTE_BIT) {
-                indices.graphicsFamily = i;
-                indices.graphicsFamilyHasValue = true;
+            if (queueFamily.queueCount > 0 && (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                indices.graphicsAndComputeFamily = i;
+                indices.graphicsAndComputeFamilyHasValue = true;
             }
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
@@ -190,7 +191,7 @@ namespace Renderer{
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsAndComputeFamily, indices.presentFamily };
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -207,7 +208,7 @@ namespace Renderer{
         features.fillModeNonSolid = VK_TRUE;
         features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
         features.multiDrawIndirect = VK_TRUE;
-
+        
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
@@ -220,8 +221,9 @@ namespace Renderer{
         if(vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &device) != VK_SUCCESS)
             throw std::runtime_error("Failed to create logical device.");
         
-        vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+        vkGetDeviceQueue(device, indices.graphicsAndComputeFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
+        vkGetDeviceQueue(device, indices.graphicsAndComputeFamily, 0, &computeQueue);
 
         hasRequiredExtensions();
     }
@@ -230,7 +232,7 @@ namespace Renderer{
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)

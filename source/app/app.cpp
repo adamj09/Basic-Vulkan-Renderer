@@ -7,8 +7,6 @@
 
 #include "engine/systems/render_system/render_system.hpp"
 #include "engine/camera/camera.hpp"
-#include "engine/material/texture/texture.hpp"
-#include "engine/material/sampler/sampler.hpp"
 
 namespace Application{
     App::App(){}
@@ -22,6 +20,13 @@ namespace Application{
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
+
+        VkPhysicalDeviceProperties physicalDeviceProperties;
+        vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &physicalDeviceProperties);
+
+        std::cout << "Max compute work group count: " << physicalDeviceProperties.limits.maxComputeWorkGroupCount[0] << '\n';
+        std::cout << "Max compute work group invocations: " << physicalDeviceProperties.limits.maxComputeWorkGroupInvocations << '\n';
+        std::cout << "Max compute work group size: " << physicalDeviceProperties.limits.maxComputeWorkGroupSize[0] << '\n';
 
         while(!window.shouldClose()){
             glfwPollEvents();
@@ -43,9 +48,11 @@ namespace Application{
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
-                renderSystem.updateScene(camera, frameIndex);
+                //renderSystem.updateSceneUniform(camera, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
+                // Cull Scene
+                // renderSystem.cullScene(commandBuffer, frameIndex);
                 // Draw Objects
                 //renderSystem.drawScene(commandBuffer, frameIndex); // DONT RUN THIS FUNCTION FOR NOW AS IT CURRENTLY CRASHES THE GPU DRIVERS
                 // End Renderpass

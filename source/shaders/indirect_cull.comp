@@ -1,6 +1,6 @@
 #version 460
 
-layout(set = 1, binding = 1) uniform globalData{
+layout(set = 1, binding = 0) uniform sceneData{
     mat4 projection;
     mat4 view;
     mat4 inverseView;
@@ -8,11 +8,23 @@ layout(set = 1, binding = 1) uniform globalData{
     bool enableOcclusionCulling;
     bool enableFrustumCulling;
 
-    vec4 frustumPlanes[6];
-    vec4 frustumCorners[8];
+    vec3 planeNormals;
+    vec3 planePoints;
 
     uint instanceCount;
-} globalUBO;
+} sceneUBO;
+
+//layout(set = 1, binding = 1) buffer drawCommandsBuffer{} drawCommands;
+
+layout(set = 1, binding = 2) uniform objectInfo{
+    uint modelId;
+    uint diffuseId;
+
+    uint boundSphereRadius;
+    vec3 boundingSphereCenter;
+} object;
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 void main(){
     

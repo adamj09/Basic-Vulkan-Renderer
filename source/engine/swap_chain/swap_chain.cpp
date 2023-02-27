@@ -86,9 +86,9 @@ namespace Renderer{
         swapChainInfo.clipped = VK_TRUE;
         
         QueueFamilyIndices indices = device.getPhysicalQueueFamilies();
-        uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+        uint32_t queueFamilyIndices[] = { indices.graphicsAndComputeFamily, indices.presentFamily };
 
-        if (indices.graphicsFamily != indices.presentFamily) {
+        if (indices.graphicsAndComputeFamily != indices.presentFamily) {
             swapChainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapChainInfo.queueFamilyIndexCount = 2;
             swapChainInfo.pQueueFamilyIndices = queueFamilyIndices;

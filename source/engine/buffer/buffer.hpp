@@ -21,6 +21,7 @@ namespace Renderer{
             void writeToBuffer(void *data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
             void copyBuffer(VkBuffer dstBuffer, VkDeviceSize size);
             void copyBufferToImage(VkImage image, uint32_t width, uint32_t height);
+            void writeDeviceLocalBuffer(void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
             VkDescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
             VkResult flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 

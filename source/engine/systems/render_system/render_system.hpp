@@ -21,16 +21,18 @@ namespace Renderer{
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateScene(Camera camera, uint32_t frameIndex);
+            void updateSceneUniform(Camera camera, uint32_t frameIndex);
+            void cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 
         private:
-            void initializeRenderSystem();
-
             void setupScene();
 
+            void createVertexBuffer();
+            void createIndexBuffer();
+
             void createDrawIndirectCommands();
-            void setupBuffers();
+            void createUniformBuffers();
 
             void setupDescriptorSets();
 
@@ -53,6 +55,8 @@ namespace Renderer{
             std::unique_ptr<GraphicsPipeline> renderPipeline;
             VkPipelineLayout renderPipelineLayout;
 
+            std::vector<std::unique_ptr<Buffer>> sceneUniformBuffers;
+
             std::vector<std::unique_ptr<Buffer>> objectInfoBuffers;
             std::vector<Object::ObjectInfo> objectInfos;
             uint32_t objectInfoDynamicAlignment;
@@ -65,10 +69,13 @@ namespace Renderer{
             std::unique_ptr<DescriptorSetLayout> cullSetLayout;
             std::unique_ptr<DescriptorSetLayout> renderSetLayout;
 
-            std::unique_ptr<Buffer> globalIndexBuffer;
+            std::unique_ptr<Buffer> globalVertexBuffer;
+            std::vector<Model::Vertex> vertices{};
+            uint32_t totalVertexCount = 0;
 
-            std::vector<std::unique_ptr<Buffer>> sceneUniformBuffers;
-            uint32_t latestBinding = 0;
+            std::unique_ptr<Buffer> globalIndexBuffer;
+            std::vector<uint32_t> indices{};
+            uint32_t totalIndexCount = 0;
 
             uint32_t totalInstanceCount = 0;
     };

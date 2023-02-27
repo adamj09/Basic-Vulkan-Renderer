@@ -35,28 +35,15 @@ namespace Renderer{
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
-        Buffer stagingBuffer{
-            device,
-            1,
-            imageSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_SHARING_MODE_EXCLUSIVE,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-        };
-
-        stagingBuffer.map();
-        stagingBuffer.writeToBuffer((void*)pPixels);
-
         imageBuffer = std::make_unique<Buffer>(
             device,
             1,
-            stagingBuffer.getSize(),
+            imageSize,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_SHARING_MODE_EXCLUSIVE,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
-
-        stagingBuffer.copyBuffer(imageBuffer->getBuffer(), imageBuffer->getSize());
+        imageBuffer->writeDeviceLocalBuffer((void *)pPixels);
 
         stbi_image_free(pixels);
         createTextureImage();

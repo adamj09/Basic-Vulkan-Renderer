@@ -15,9 +15,9 @@ namespace Renderer{
     };
 
     struct QueueFamilyIndices{
-        uint32_t graphicsFamily, presentFamily;
-	    bool graphicsFamilyHasValue = false, presentFamilyHasValue = false;
-	    bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
+        uint32_t graphicsAndComputeFamily, presentFamily;
+	    bool graphicsAndComputeFamilyHasValue = false, presentFamilyHasValue = false;
+	    bool isComplete() { return graphicsAndComputeFamilyHasValue && presentFamilyHasValue; }
     };
 
     class Device{
@@ -34,9 +34,9 @@ namespace Renderer{
             VkCommandPool getCommandPool(){ return commandPool; }
             VkQueue getGraphicsQueue() { return graphicsQueue; }
             VkQueue getPresentQueue() { return presentQueue; }
+            VkQueue getComputeQueue() { return computeQueue; }
             VkSampleCountFlagBits getMaxUsableSampleCount();
             
-
             // Other Public Functions
             VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
             void createImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
@@ -68,12 +68,15 @@ namespace Renderer{
             VkPhysicalDeviceProperties properties;
             VkSurfaceKHR surface;
             Window& window;
-            VkQueue graphicsQueue, presentQueue;
+            VkQueue graphicsQueue, presentQueue, computeQueue;
             VkCommandPool commandPool;
 
             Debugger::VulkanDebugger debugger;
 
             // Expand this vector to include all needed device extensions
-            const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+            const std::vector<const char*> deviceExtensions = { 
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+                VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
+            };
     };
 }

@@ -38,30 +38,15 @@ namespace Renderer{
             unsigned int getId() { return modelId; }
             static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filepath);
 
-            uint32_t getVertexCount() { return vertexCount; }
-            uint32_t getIndexCount() { 
-                if(hasIndexBuffer) 
-                    return indexCount; 
-                else
-                    return 0;
-            }
+            std::vector<Vertex> getVertices() { return modelData.vertices; }
+            std::vector<uint32_t> getIndices() { return modelData.indices; }
 
-            void bind(VkCommandBuffer commandBuffer);
-            void draw(VkCommandBuffer commandBuffer);
-
+            uint32_t getVertexCount() { return static_cast<uint32_t>(modelData.vertices.size()); }
+            uint32_t getIndexCount() { return static_cast<uint32_t>(modelData.indices.size()); }
+            
         private:    
-            void createVertexBuffers(const std::vector<Vertex> &vertices);
-            void createIndexBuffers(const std::vector<uint32_t> &indices);
-
             Device& device;
-
-            std::unique_ptr<Buffer> vertexBuffer;
-            uint32_t vertexCount;
-
-            std::unique_ptr<Buffer> indexBuffer;
-            uint32_t indexCount;
-
-            bool hasIndexBuffer = false;
+            ModelData& modelData;
 
             unsigned int modelId;
     };

@@ -23,8 +23,6 @@ namespace Application{
             Renderer::Window window{static_cast<int>(windowExtent.width), static_cast<int>(windowExtent.height), "Renderer View"};
             Renderer::Device device{window};
             Renderer::Renderer renderer{device, window};
-            Renderer::RenderSystem renderSystem{device, renderer.getSwapChainRenderPass()};
-
-            std::shared_ptr<Renderer::Sampler> textureSampler;
+            //Renderer::RenderSystem renderSystem{device, renderer.getSwapChainRenderPass()};
     };
 }

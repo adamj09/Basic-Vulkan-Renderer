@@ -12,7 +12,18 @@
 namespace Renderer{
     RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) 
     : device{device}, renderPass{renderPass}{
-        initializeRenderSystem();
+        setupScene();
+
+        createDrawIndirectCommands();
+
+        createUniformBuffers();
+        setupDescriptorSets();
+
+        createComputePipelineLayout();
+        createComputePipeline();
+
+        createGraphicsPipelineLayout();
+        createGraphicsPipeline();
     }
 
     RenderSystem::~RenderSystem(){
@@ -21,21 +32,6 @@ namespace Renderer{
 
         vkDestroyDescriptorSetLayout(device.getDevice(), renderSetLayout->getLayout(), nullptr);
         vkDestroyPipelineLayout(device.getDevice(), renderPipelineLayout, nullptr);
-    }
-
-    void RenderSystem::initializeRenderSystem(){
-        setupScene();
-
-        createDrawIndirectCommands();
-
-        setupBuffers();
-        setupDescriptorSets();
-
-        createComputePipelineLayout();
-        createComputePipeline();
-
-        createGraphicsPipelineLayout();
-        createGraphicsPipeline();
     }
 
     void RenderSystem::setupScene(){
@@ -67,6 +63,57 @@ namespace Renderer{
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
 
+    void RenderSystem::createVertexBuffer(){
+        // Merge all vertices into one vector and update total vertex count
+        for(size_t i = 0; i < scene.models.size(); i++){
+            auto model = scene.models.at(i);
+            vertices.reserve(model->getVertices().size());
+            vertices.insert(vertices.end(), model->getVertices().begin(), model->getVertices().end());
+            totalVertexCount += static_cast<uint32_t>(model->getVertexCount());
+        }
+        if(totalVertexCount == 0)
+            return;
+
+        assert(totalVertexCount >= 3 && "Vertex count must be at least 3.");
+        VkDeviceSize bufferSize = sizeof(Model::Vertex) * totalVertexCount;
+
+        globalVertexBuffer = std::make_unique<Buffer>(
+            device,
+            totalVertexCount,
+            bufferSize,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        globalVertexBuffer->writeDeviceLocalBuffer((void *)vertices.data());
+    }
+
+    void RenderSystem::createIndexBuffer(){
+        // Merge all indices into one vector and update total index count
+        for(size_t i = 0; i < scene.models.size(); i++){
+            auto model = scene.models.at(i);
+            if(model->getIndexCount() == 0)
+                continue;
+            indices.reserve(model->getIndices().size());
+            indices.insert(indices.end(), model->getIndices().begin(), model->getIndices().end());
+            totalIndexCount += static_cast<uint32_t>(model->getIndexCount());
+        }
+        if(totalIndexCount == 0)
+            return;
+
+        VkDeviceSize bufferSize = sizeof(indices[0]) * totalIndexCount;
+
+        globalIndexBuffer = std::make_unique<Buffer>(
+            device,
+            totalIndexCount,
+            bufferSize,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        globalIndexBuffer->writeDeviceLocalBuffer((void *)indices.data());
+    }
+
     void RenderSystem::createDrawIndirectCommands(){
         indirectCommands.clear();
         totalInstanceCount = 0;
@@ -94,18 +141,6 @@ namespace Renderer{
         // Send indirect commands to GPU memory (2 buffers are need for double-buffering)
         indirectCommandsBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            Buffer stagingBuffer{
-                device,
-                1,
-                indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_SHARING_MODE_EXCLUSIVE,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            };
-
-            stagingBuffer.map();
-            stagingBuffer.writeToBuffer(indirectCommands.data());
-
             indirectCommandsBuffers[i] = std::make_unique<Buffer>(
                 device,
                 1,
@@ -114,12 +149,12 @@ namespace Renderer{
                 VK_SHARING_MODE_EXCLUSIVE,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             );
-            
-            stagingBuffer.copyBuffer(indirectCommandsBuffers[i]->getBuffer(), indirectCommandsBuffers[i]->getSize());
+
+            indirectCommandsBuffers[i]->writeDeviceLocalBuffer(indirectCommands.data());
         }
     }
 
-    void RenderSystem::setupBuffers(){
+    void RenderSystem::createUniformBuffers(){
         // Per-object info buffers
         objectInfos.resize(totalInstanceCount);
         for(size_t i = 0 ; i < totalInstanceCount; i++)
@@ -130,7 +165,14 @@ namespace Renderer{
 
         objectInfoBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for(int i =0; i < objectInfoBuffers.size(); i++){
-            objectInfoBuffers[i] = std::make_unique<Buffer>(device, 1, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            objectInfoBuffers[i] = std::make_unique<Buffer>(
+                device, 
+                1, 
+                bufferSize, 
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                VK_SHARING_MODE_EXCLUSIVE, 
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            );
             objectInfoBuffers[i]->map();
             for(size_t j = 0; j < scene.objects.size(); j++){
                 objectInfoBuffers[i]->writeToBuffer(&scene.objects.at(j).objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * j));
@@ -141,7 +183,14 @@ namespace Renderer{
         // Uniform scene buffers
         sceneUniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < sceneUniformBuffers.size(); i++) {
-            sceneUniformBuffers[i] = std::make_unique<Buffer>(device, 1, sizeof(Scene::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            sceneUniformBuffers[i] = std::make_unique<Buffer>(
+                device, 
+                1, 
+                sizeof(Scene::SceneUniform), 
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                VK_SHARING_MODE_EXCLUSIVE, 
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            );
             sceneUniformBuffers[i]->map();
         } 
     }
@@ -151,20 +200,21 @@ namespace Renderer{
         globalPool = std::make_unique<DescriptorPool>(device);
         globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Indirect draw buffers (for gpu-created draw commands)
         globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Uniform scene info (for render pipeline)
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, SwapChain::MAX_FRAMES_IN_FLIGHT);        // Per-object info
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, SwapChain::MAX_FRAMES_IN_FLIGHT);        // Object info (resource ids)
         globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT * 2); // Multiply max frames in flight by number of sets
 
         // Layout Setup (Bindings are set in order of when they are added)
         // Render set layout (vert and frag shaders)
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);            // binding 0 (Uniform scene info)
-        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 1 (Per-object info)
+        renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 1 (Object info)
         renderSetLayout->buildLayout();
 
+        // Cull set layout (cull compute shader)
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 0 (Uniform scene info)
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 1 (Indirect draw data)
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 2 (Per-object info)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 2 (Object info)
         cullSetLayout->buildLayout();
 
         // Render Set
@@ -242,7 +292,7 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateScene(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateSceneUniform(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
         scene.sceneUniform.projection = camera.getProjection();
         scene.sceneUniform.view = camera.getView();
@@ -261,9 +311,21 @@ namespace Renderer{
     }
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
-        cullPipeline->bind(commandBuffer);
         renderPipeline->bind(commandBuffer);
         vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
+    }
+
+    void RenderSystem::cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
+        assert(cullPipeline != nullptr && "Cannot run GPU-based culling without compute pipeline.");
+
+        cullPipeline->bind(commandBuffer);
+
+        for(size_t i = 0; i < scene.objects.size(); i++){
+            uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cullPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
+        }
+        // LEFT OFF HERE, CONTINUE BY SUBMITTING COMPUTE WORK (VIA VKQUEUESUBMIT)
+        vkCmdDispatch(commandBuffer, indirectCommands.size() / 256, 1, 1);
     }
 
     size_t RenderSystem::padUniformBufferSize(size_t originalSize){
