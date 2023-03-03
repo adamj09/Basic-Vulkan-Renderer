@@ -50,6 +50,13 @@ namespace Renderer{
         vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
 
+    void DescriptorPool::addNewSets(VkDescriptorSetLayout descriptorSetLayout, std::vector<VkWriteDescriptorSet> writes, uint32_t count){
+        for(uint32_t i = 0; i < count; i++){
+            allocateSet(descriptorSetLayout);
+            updateSet(allocatedSets.size() - 1, writes);
+        }
+    }
+
     DescriptorSetLayout::DescriptorSetLayout(Device& device) : device{device}{}
     DescriptorSetLayout::~DescriptorSetLayout(){}
 

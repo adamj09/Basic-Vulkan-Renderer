@@ -107,7 +107,6 @@ namespace Renderer{
 
         stagingBuffer.map();
         stagingBuffer.writeToBuffer(data, size, offset);
-
         stagingBuffer.copyBuffer(buffer, bufferSize);
     }
 

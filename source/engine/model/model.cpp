@@ -23,16 +23,18 @@ namespace std{
 }
 
 namespace Renderer{
-    Model::Model(Device& device, ModelData& data, unsigned int modelId) : device{device}, modelData{modelData}, modelId{modelId}{}
+    Model::Model(Device& device, const std::string& filepath, unsigned int modelId) : device{device}, modelId{modelId}{
+        loadModel(filepath);
+        std::cout << filepath << " vertex count: " << vertices.size() << '\n';
+        std::cout << filepath << " index count: " << indices.size() << '\n';
+    }
 
     std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filepath){
         static unsigned int currentId = 0;
-        ModelData data{};
-        data.loadModel(filepath);
-        return std::make_unique<Model>(device, data, currentId++);
+        return std::make_unique<Model>(device, filepath, currentId++);
     }
 
-    void Model::ModelData::loadModel(const std::string &filepath){
+    void Model::loadModel(const std::string &filepath){
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;

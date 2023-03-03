@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <math.h>
 #include <limits>
+#include <iostream>
 
 namespace Renderer{
 
@@ -145,9 +146,8 @@ namespace Renderer{
         if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
         if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
-        if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
+        if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
             rotation += lookSpeed * dt * glm::normalize(rotate);
-        }
 
         // limit pitch values between +/- ~85 degrees
         rotation.x = glm::clamp(rotation.x, -1.5f, 1.5f);

@@ -14,9 +14,13 @@ namespace Renderer{
     : device{device}, renderPass{renderPass}{
         setupScene();
 
+        createVertexBuffer();
+        createIndexBuffer();
+
         createDrawIndirectCommands();
 
         createUniformBuffers();
+
         setupDescriptorSets();
 
         createComputePipelineLayout();
@@ -52,6 +56,9 @@ namespace Renderer{
         scene.createObject();
         scene.objects.at(0).objectInfo.modelId = 0; // spongebob model
         scene.objects.at(0).objectInfo.diffuseId = 0; // spongebob texture
+        scene.objects.at(0).objectInfo.modelMatrix = scene.objects.at(0).transform.mat4();
+        scene.objects.at(0).objectInfo.normalMatrix = scene.objects.at(0).transform.normalMatrix();
+
         scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
@@ -59,6 +66,9 @@ namespace Renderer{
         scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 1; // sample model
         scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
+        scene.objects.at(1).objectInfo.modelMatrix = scene.objects.at(1).transform.mat4();
+        scene.objects.at(1).objectInfo.normalMatrix = scene.objects.at(1).transform.normalMatrix();
+
         scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
@@ -66,10 +76,10 @@ namespace Renderer{
     void RenderSystem::createVertexBuffer(){
         // Merge all vertices into one vector and update total vertex count
         for(size_t i = 0; i < scene.models.size(); i++){
-            auto model = scene.models.at(i);
-            vertices.reserve(model->getVertices().size());
-            vertices.insert(vertices.end(), model->getVertices().begin(), model->getVertices().end());
-            totalVertexCount += static_cast<uint32_t>(model->getVertexCount());
+            const auto modelVertices = scene.models.at(i)->getVertices();
+            vertices.reserve(modelVertices.size());
+            vertices.insert(vertices.end(), modelVertices.begin(), modelVertices.end());
+            totalVertexCount += static_cast<uint32_t>(scene.models.at(i)->getVertexCount());
         }
         if(totalVertexCount == 0)
             return;
@@ -91,12 +101,12 @@ namespace Renderer{
     void RenderSystem::createIndexBuffer(){
         // Merge all indices into one vector and update total index count
         for(size_t i = 0; i < scene.models.size(); i++){
-            auto model = scene.models.at(i);
-            if(model->getIndexCount() == 0)
+            const auto modelIndices = scene.models.at(i)->getIndices();
+            if(scene.models.at(i)->getIndexCount() == 0)
                 continue;
-            indices.reserve(model->getIndices().size());
-            indices.insert(indices.end(), model->getIndices().begin(), model->getIndices().end());
-            totalIndexCount += static_cast<uint32_t>(model->getIndexCount());
+            indices.reserve(modelIndices.size());
+            indices.insert(indices.end(), modelIndices.begin(), modelIndices.end());
+            totalIndexCount += static_cast<uint32_t>(scene.models.at(i)->getIndexCount());
         }
         if(totalIndexCount == 0)
             return;
@@ -196,51 +206,41 @@ namespace Renderer{
     }
 
     void RenderSystem::setupDescriptorSets(){
-        // Pool Setup
+        uint32_t descriptorCount = 2 * SwapChain::MAX_FRAMES_IN_FLIGHT; // Number of descriptor sets multiplied by frames in flight
         globalPool = std::make_unique<DescriptorPool>(device);
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Indirect draw buffers (for gpu-created draw commands)
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT);                // Uniform scene info (for render pipeline)
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, SwapChain::MAX_FRAMES_IN_FLIGHT);        // Object info (resource ids)
-        globalPool->buildPool(SwapChain::MAX_FRAMES_IN_FLIGHT * 2); // Multiply max frames in flight by number of sets
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount);                // Indirect draw buffers (for gpu-created draw commands)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount);                // Uniform scene info (for render pipeline)
+        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, descriptorCount);        // Object info (resource ids)
+        globalPool->buildPool(descriptorCount); // Multiply max frames in flight by number of sets
 
-        // Layout Setup (Bindings are set in order of when they are added)
-        // Render set layout (vert and frag shaders)
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);            // binding 0 (Uniform scene info)
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_ALL_GRAPHICS);    // binding 1 (Object info)
         renderSetLayout->buildLayout();
 
-        // Cull set layout (cull compute shader)
         cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
         cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 0 (Uniform scene info)
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 1 (Indirect draw data)
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 2 (Object info)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT);       // binding 1 (Object info)
+        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);               // binding 2 (Indirect draw data)
         cullSetLayout->buildLayout();
 
-        // Render Set
-        for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
-            uint32_t setIndex = i * SwapChain::MAX_FRAMES_IN_FLIGHT;
-            VkDescriptorBufferInfo indirectBufferInfo = indirectCommandsBuffers[i]->descriptorInfo();
-            VkDescriptorBufferInfo sceneUniformBufferInfo = sceneUniformBuffers[i]->descriptorInfo();
-            VkDescriptorBufferInfo objectBufferInfo = objectInfoBuffers[i]->descriptorInfo();
-            objectBufferInfo.range = objectInfoDynamicAlignment;
+        VkDescriptorBufferInfo sceneUniformBufferInfo = sceneUniformBuffers[0]->descriptorInfo();
+        VkDescriptorBufferInfo indirectCommandsBufferInfo = indirectCommandsBuffers[0]->descriptorInfo();
+        VkDescriptorBufferInfo objectBufferInfo = objectInfoBuffers[0]->descriptorInfo();
+        objectBufferInfo.range = objectInfoDynamicAlignment;
 
-            std::vector<VkWriteDescriptorSet> renderLayoutWrites {
-                renderSetLayout->writeBuffer(0, &sceneUniformBufferInfo),
-                renderSetLayout->writeBuffer(1, &objectBufferInfo)
-            };
-            std::vector<VkWriteDescriptorSet> cullLayoutWrites {
-                cullSetLayout->writeBuffer(0, &indirectBufferInfo),
-                cullSetLayout->writeBuffer(1, &sceneUniformBufferInfo),
-                cullSetLayout->writeBuffer(2, &objectBufferInfo)
-            };
+        std::vector<VkWriteDescriptorSet> renderLayoutWrites {
+            renderSetLayout->writeBuffer(0, &sceneUniformBufferInfo),
+            renderSetLayout->writeBuffer(1, &objectBufferInfo)
+        };
+        std::vector<VkWriteDescriptorSet> cullLayoutWrites {
+            cullSetLayout->writeBuffer(0, &sceneUniformBufferInfo),
+            cullSetLayout->writeBuffer(1, &objectBufferInfo),
+            cullSetLayout->writeBuffer(2, &indirectCommandsBufferInfo)
+        };
 
-            globalPool->allocateSet(renderSetLayout->getLayout());
-            globalPool->updateSet(setIndex, renderLayoutWrites);
-
-            globalPool->allocateSet(cullSetLayout->getLayout());
-            globalPool->updateSet(setIndex + 1, cullLayoutWrites);
-        }
+        globalPool->addNewSets(renderSetLayout->getLayout(), renderLayoutWrites, 2);
+        globalPool->addNewSets(cullSetLayout->getLayout(), cullLayoutWrites, 2);
     }
 
     void RenderSystem::createComputePipelineLayout(){
@@ -299,7 +299,7 @@ namespace Renderer{
         scene.sceneUniform.inverseView = camera.getInverseView();
 
         scene.sceneUniform.enableFrustumCulling = camera.enableFrustumCulling;
-        scene.sceneUniform.enableOcclusionCulling = true;
+        scene.sceneUniform.enableOcclusionCulling = false;
 
         if(scene.sceneUniform.enableFrustumCulling)
             scene.sceneUniform.viewBoundingBox = camera.createFrustumViewBounds();
@@ -321,11 +321,11 @@ namespace Renderer{
         cullPipeline->bind(commandBuffer);
 
         for(size_t i = 0; i < scene.objects.size(); i++){
+            uint32_t setIndex = (frameIndex + SwapChain::MAX_FRAMES_IN_FLIGHT) * 1; // Multiply by number of groups of uniform sets that come beforehand
             uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cullPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, cullPipelineLayout, 0, 1, &globalPool->getSets()[setIndex], 1, &dynamicOffset);
         }
-        // LEFT OFF HERE, CONTINUE BY SUBMITTING COMPUTE WORK (VIA VKQUEUESUBMIT)
-        vkCmdDispatch(commandBuffer, indirectCommands.size() / 256, 1, 1);
+        vkCmdDispatch(commandBuffer, indirectCommands.size() / 64, 1, 1);
     }
 
     size_t RenderSystem::padUniformBufferSize(size_t originalSize){

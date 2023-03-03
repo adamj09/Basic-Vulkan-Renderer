@@ -14,12 +14,25 @@ layout(set = 0, binding = 0) uniform sceneUbo{
   mat4 projection;
   mat4 view;
   mat4 inverseView;
+
+  bool enableOcclusionCulling;
+  bool enableFrustumCulling;
+
+  vec3 planeNormals;
+  vec3 planePoints;
+
+  uint instanceCount;
 } globalUBO;
 
 layout(set = 0, binding = 1) uniform modelDubo{
+  uint modelId;
+  uint diffuseId;
+
+  uint boundSphereRadius;
+  vec3 boundingSphereCenter;
+  
   mat4 modelMatrix;
-  mat4 normalMatrix;
-  uint textureIndex;
+  mat3 normalMatrix;
 } model;
 
 void main(){

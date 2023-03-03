@@ -14,17 +14,20 @@ layout(set = 1, binding = 0) uniform sceneData{
     uint instanceCount;
 } sceneUBO;
 
-//layout(set = 1, binding = 1) buffer drawCommandsBuffer{} drawCommands;
-
-layout(set = 1, binding = 2) uniform objectInfo{
+layout(set = 1, binding = 1) uniform objectInfo{
     uint modelId;
     uint diffuseId;
 
     uint boundSphereRadius;
     vec3 boundingSphereCenter;
+
+    mat4 modelMatrix;
+    mat3 normalMatrix;
 } object;
 
-layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+//layout(set = 1, binding = 2) buffer drawCommandsBuffer{} drawCommands;
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main(){
     

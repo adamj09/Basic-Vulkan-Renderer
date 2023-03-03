@@ -24,13 +24,7 @@ namespace Renderer{
                 }
             };
 
-            struct ModelData{
-                std::vector<Vertex> vertices{};
-                std::vector<uint32_t> indices{};
-                void loadModel(const std::string &filepath);
-            };
-
-            Model(Device& device, ModelData& data, unsigned int modelId);
+            Model(Device& device, const std::string &filepath, unsigned int modelId);
 
             Model(const Model&) = delete;
             Model &operator=(const Model&) = delete;
@@ -38,15 +32,19 @@ namespace Renderer{
             unsigned int getId() { return modelId; }
             static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filepath);
 
-            std::vector<Vertex> getVertices() { return modelData.vertices; }
-            std::vector<uint32_t> getIndices() { return modelData.indices; }
+            std::vector<Vertex> getVertices() { return vertices; }
+            std::vector<uint32_t> getIndices() { return indices; }
 
-            uint32_t getVertexCount() { return static_cast<uint32_t>(modelData.vertices.size()); }
-            uint32_t getIndexCount() { return static_cast<uint32_t>(modelData.indices.size()); }
+            uint32_t getVertexCount() { return static_cast<uint32_t>(vertices.size()); }
+            uint32_t getIndexCount() { return static_cast<uint32_t>(indices.size()); }
             
         private:    
+            void loadModel(const std::string &filepath);
+
             Device& device;
-            ModelData& modelData;
+
+            std::vector<Vertex> vertices{};
+            std::vector<uint32_t> indices{};
 
             unsigned int modelId;
     };

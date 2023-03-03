@@ -48,11 +48,11 @@ namespace Application{
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
-                //renderSystem.updateSceneUniform(camera, frameIndex);
+                renderSystem.updateSceneUniform(camera, frameIndex);
+                // Cull Scene     
+                renderSystem.cullScene(commandBuffer, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
-                // Cull Scene
-                // renderSystem.cullScene(commandBuffer, frameIndex);
                 // Draw Objects
                 //renderSystem.drawScene(commandBuffer, frameIndex); // DONT RUN THIS FUNCTION FOR NOW AS IT CURRENTLY CRASHES THE GPU DRIVERS
                 // End Renderpass
