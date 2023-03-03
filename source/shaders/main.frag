@@ -21,7 +21,7 @@ layout(set = 0, binding = 0) uniform sceneUbo{
   uint instanceCount;
 } globalUBO;
 
-layout(set = 0, binding = 1) uniform modelDubo{
+layout(set = 0, binding = 1) uniform objectDubo{
   uint modelId;
   uint diffuseId;
 
@@ -30,14 +30,13 @@ layout(set = 0, binding = 1) uniform modelDubo{
 
   mat4 modelMatrix;
   mat3 normalMatrix;
-} model;
+} object;
 
-//layout(set = 0, binding = 2) uniform sampler texSampler;
-//layout(set = 0, binding = 3) uniform texture2D textures[1];
+layout(set = 0, binding = 2) uniform sampler texSampler;
+layout(set = 0, binding = 3) uniform texture2D textures[1];
 
 void main(){
   vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
   vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
-  outColor = vec4(1.0, 1.0, 1.0, 1.0);
-  //outColor = texture(sampler2D(textures[model.textureIndex], texSampler), inFragTexCoord);
+  outColor = texture(sampler2D(textures[object.diffuseId], texSampler), inFragTexCoord);
 }

@@ -14,7 +14,7 @@ namespace Renderer{
             ~DescriptorSetLayout();
 
             VkDescriptorSetLayout getLayout() { return layout; }
-            void addBinding(uint32_t descriptorCount, VkDescriptorType type, VkShaderStageFlags stageFlags, VkSampler* pImmutableSamplers = nullptr);
+            void addBinding(uint32_t descriptorCount, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, VkSampler* pImmutableSamplers = nullptr);
             void buildLayout(VkDescriptorSetLayoutCreateFlags flags = 0);
 
             VkWriteDescriptorSet writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);

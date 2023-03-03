@@ -7,6 +7,7 @@
 
 #include "engine/systems/render_system/render_system.hpp"
 #include "engine/camera/camera.hpp"
+#include "engine/camera/camera_controller/camera_controller.hpp"
 
 namespace Application{
     App::App(){}
@@ -14,9 +15,11 @@ namespace Application{
 
     void App::run(){
         // Camera creation
-        float aspect = renderer.getAspectRatio();
         Renderer::Camera camera{};
         camera.enableFrustumCulling = true;
+        Renderer::KeyboardMovementController cameraController{};
+        auto viewerObject = Renderer::Object::createObject();
+        viewerObject.transform.translation.z = -2.5f;
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
@@ -40,16 +43,17 @@ namespace Application{
                 intervalTime = 0;
             }
 
-            camera.moveSpeed = (0.0035f);
-            camera.lookSpeed = (0.0035f);
+            cameraController.moveSpeed = (0.0035f);
+            cameraController.lookSpeed = (0.0035f);
+            cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
+            float aspect = renderer.getAspectRatio();
             camera.setPerspectiveProjection(glm::radians(90.f), aspect, 0.1f, 100.f);
-            camera.moveInPlaneXZ(window.getGLFWwindow(), frameTime);
 
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
                 renderSystem.updateSceneUniform(camera, frameIndex);
-                // Cull Scene     
+                // Cull Scene
                 renderSystem.cullScene(commandBuffer, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);

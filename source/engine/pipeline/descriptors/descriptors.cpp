@@ -60,8 +60,8 @@ namespace Renderer{
     DescriptorSetLayout::DescriptorSetLayout(Device& device) : device{device}{}
     DescriptorSetLayout::~DescriptorSetLayout(){}
 
-    void DescriptorSetLayout::addBinding(uint32_t descriptorCount, VkDescriptorType type, VkShaderStageFlags stageFlags, VkSampler* pImmutableSamplers){
-        uint32_t binding = bindings.size();
+    void DescriptorSetLayout::addBinding(uint32_t descriptorCount, VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, VkSampler* pImmutableSamplers){
+        if(bindings.count(binding) != 0 && "Requested binding already occupied.");
         VkDescriptorSetLayoutBinding newBinding {};
         newBinding.binding = binding;
         newBinding.descriptorCount = descriptorCount;

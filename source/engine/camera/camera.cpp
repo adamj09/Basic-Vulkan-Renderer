@@ -138,35 +138,4 @@ namespace Renderer{
         inverseViewMatrix[3][1] = position.y;
         inverseViewMatrix[3][2] = position.z;
     }
-
-    void Camera::moveInPlaneXZ(GLFWwindow* window, float dt) {
-        glm::vec3 rotate{0};
-        if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
-        if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
-        if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
-        if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
-
-        if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
-            rotation += lookSpeed * dt * glm::normalize(rotate);
-
-        // limit pitch values between +/- ~85 degrees
-        rotation.x = glm::clamp(rotation.x, -1.5f, 1.5f);
-        rotation.y = glm::mod(rotation.y, glm::two_pi<float>());
-
-        float yaw = rotation.y;
-        forwardDir = {sin(yaw), 0.f, cos(yaw)};
-        rightDir = {forwardDir.z, 0.f, -forwardDir.x};
-        upDir = {0.f, -1.f, 0.f};
-
-        glm::vec3 moveDir{0.f};
-        if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += forwardDir;
-        if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= forwardDir;
-        if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
-        if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
-        if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
-        if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
-
-        if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon())
-            translation += moveSpeed * dt * glm::normalize(moveDir);
-    }
 }

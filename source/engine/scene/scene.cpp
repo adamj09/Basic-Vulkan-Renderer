@@ -27,9 +27,9 @@ namespace Renderer{
         spongeTexture->samplerId = samplerId;
         textures[spongeTexture->getId()] = spongeTexture;
 
-        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
+        /*std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
         sampleImage->samplerId = samplerId;
-        textures[sampleImage->getId()] = sampleImage;
+        textures[sampleImage->getId()] = sampleImage;*/
     }
 
     void Scene::createObject(){

@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform sceneUbo{
   uint instanceCount;
 } globalUBO;
 
-layout(set = 0, binding = 1) uniform modelDubo{
+layout(set = 0, binding = 1) uniform objectDubo{
   uint modelId;
   uint diffuseId;
 
@@ -33,12 +33,12 @@ layout(set = 0, binding = 1) uniform modelDubo{
   
   mat4 modelMatrix;
   mat3 normalMatrix;
-} model;
+} object;
 
 void main(){
-  vec4 positionWorld = model.modelMatrix * vec4(inPosition, 1.0);
+  vec4 positionWorld = object.modelMatrix * vec4(inPosition, 1.0);
   gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
-  fragNormalWorld = normalize(mat3(model.normalMatrix) * inNormal);
+  fragNormalWorld = normalize(mat3(object.normalMatrix) * inNormal);
   fragPosWorld = positionWorld.xyz;
   fragColor = inColor;
   fragTexCoord = inTexCoord;
