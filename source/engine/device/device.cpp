@@ -98,7 +98,6 @@ namespace Renderer{
 
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
         std::cout << "Physical device in use: " << properties.deviceName << std::endl;
-
     }
 
     bool Device::isDeviceSuitable(VkPhysicalDevice device){

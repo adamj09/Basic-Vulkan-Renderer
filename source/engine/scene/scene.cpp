@@ -17,8 +17,8 @@ namespace Renderer{
         std::shared_ptr<Renderer::Model> spongebob = Renderer::Model::createModelFromFile(device, "../source/models/spongebob.obj");
         models[spongebob->getId()] = spongebob;
 
-        std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
-        models[smoothVase->getId()] = smoothVase;
+        //std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
+        //models[smoothVase->getId()] = smoothVase;
     }
 
     void Scene::loadTexturesWithSampler(Device& device, unsigned int samplerId){

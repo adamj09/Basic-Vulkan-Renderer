@@ -63,14 +63,14 @@ namespace Renderer{
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
         // sample object
-        scene.createObject();
+        /*scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 1; // sample model
         scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
         scene.objects.at(1).objectInfo.modelMatrix = scene.objects.at(1).transform.mat4();
         scene.objects.at(1).objectInfo.normalMatrix = scene.objects.at(1).transform.normalMatrix();
 
         scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
-        scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
+        scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};*/
     }
 
     void RenderSystem::createVertexBuffer(){
@@ -140,7 +140,7 @@ namespace Renderer{
             VkDrawIndexedIndirectCommand newIndexedIndirectCommand;
             newIndexedIndirectCommand.firstIndex = 0; // Currently there's one mesh per object so this will always be 0.
             newIndexedIndirectCommand.instanceCount = instanceCount; // Number of objects that use this unique model
-            newIndexedIndirectCommand.firstInstance = 0; // Should always be 0 at the moment (start draw command at first instance of this model)
+            newIndexedIndirectCommand.firstInstance = i;
             newIndexedIndirectCommand.vertexOffset = 0; // Should always be 0
             newIndexedIndirectCommand.indexCount = scene.models.at(scene.objects.at(i).objectInfo.modelId)->getIndexCount(); // Number of indices the unique model has
             indirectCommands.push_back(newIndexedIndirectCommand); // Add the new command to the vector
@@ -166,10 +166,6 @@ namespace Renderer{
 
     void RenderSystem::createUniformBuffers(){
         // Per-object info buffers
-        objectInfos.resize(totalInstanceCount);
-        for(size_t i = 0 ; i < totalInstanceCount; i++)
-            objectInfos.push_back(scene.objects.at(i).objectInfo);
-
         objectInfoDynamicAlignment = padUniformBufferSize(sizeof(Object::ObjectInfo));
         size_t bufferSize = objectInfoDynamicAlignment * scene.objects.size();
 
@@ -308,6 +304,17 @@ namespace Renderer{
 
         sceneUniformBuffers[frameIndex]->writeToBuffer(&scene.sceneUniform);
         sceneUniformBuffers[frameIndex]->flush();
+
+         for(int i = 0; i < scene.objects.size(); i++){
+            auto obj = scene.objects.at(i);
+            objectInfo.diffuseId = obj.getId();
+            objectInfo.modelId = obj.getId();
+            objectInfo.modelMatrix = obj.transform.mat4();
+            objectInfo.normalMatrix = obj.transform.normalMatrix();
+            
+            objectInfoBuffers[frameIndex]->writeToBuffer(&objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * i));
+            objectInfoBuffers[frameIndex]->flush();
+        }
     }
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){

@@ -58,7 +58,7 @@ namespace Renderer{
             std::vector<std::unique_ptr<Buffer>> sceneUniformBuffers;
 
             std::vector<std::unique_ptr<Buffer>> objectInfoBuffers;
-            std::vector<Object::ObjectInfo> objectInfos;
+            Object::ObjectInfo objectInfo;
             uint32_t objectInfoDynamicAlignment;
 
             std::vector<std::unique_ptr<Buffer>> indirectCommandsBuffers;
