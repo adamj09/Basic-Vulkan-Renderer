@@ -312,6 +312,16 @@ namespace Renderer{
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
         renderPipeline->bind(commandBuffer);
+        VkBuffer buffers[] = {globalVertexBuffer->getBuffer()};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, globalIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+        for(size_t i = 0; i < scene.objects.size(); i++){
+            uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
+        }
+
         vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
     }
 
