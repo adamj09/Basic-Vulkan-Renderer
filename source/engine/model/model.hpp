@@ -32,16 +32,29 @@ namespace Renderer{
             unsigned int getId() { return modelId; }
             static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filepath);
 
+            VkBuffer getVertexBuffer() { return vertexBuffer->getBuffer(); }
+            VkBuffer getIndexBuffer () { return indexBuffer->getBuffer(); }
+
             std::vector<Vertex> getVertices() { return vertices; }
             std::vector<uint32_t> getIndices() { return indices; }
 
-            uint32_t getVertexCount() { return static_cast<uint32_t>(vertices.size()); }
-            uint32_t getIndexCount() { return static_cast<uint32_t>(indices.size()); }
+            uint32_t getVertexCount() { return vertexCount; }
+            uint32_t getIndexCount() { return indexCount; }
             
         private:    
             void loadModel(const std::string &filepath);
+            void createIndexBuffer();
+            void createVertexBuffer();
 
             Device& device;
+
+            std::unique_ptr<Buffer> vertexBuffer;
+            std::unique_ptr<Buffer> indexBuffer;
+
+            bool hasIndexBuffer = false;
+
+            uint32_t indexCount;
+            uint32_t vertexCount;
 
             std::vector<Vertex> vertices{};
             std::vector<uint32_t> indices{};

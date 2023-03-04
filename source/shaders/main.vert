@@ -36,10 +36,11 @@ layout(set = 0, binding = 1) uniform objectDubo{
 } object;
 
 void main(){
-  vec4 positionWorld = object.modelMatrix * vec4(inPosition, 1.0);
-  gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
-  fragNormalWorld = normalize(mat3(object.normalMatrix) * inNormal);
-  fragPosWorld = positionWorld.xyz;
+  //vec4 positionWorld = object.modelMatrix * vec4(inPosition, 1.0);
+  gl_Position = vec4(inPosition, 1.0);
+  //gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
+  //fragNormalWorld = normalize(mat3(object.normalMatrix) * inNormal);
+  //fragPosWorld = positionWorld.xyz;
   fragColor = inColor;
-  fragTexCoord = inTexCoord;
+  //fragTexCoord = inTexCoord;
 }

@@ -28,9 +28,6 @@ namespace Renderer{
         private:
             void setupScene();
 
-            void createVertexBuffer();
-            void createIndexBuffer();
-
             void createDrawIndirectCommands();
             void createUniformBuffers();
 

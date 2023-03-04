@@ -25,6 +25,8 @@ namespace std{
 namespace Renderer{
     Model::Model(Device& device, const std::string& filepath, unsigned int modelId) : device{device}, modelId{modelId}{
         loadModel(filepath);
+        createVertexBuffer();
+        createIndexBuffer();
         std::cout << filepath << " vertex count: " << vertices.size() << '\n';
         std::cout << filepath << " index count: " << indices.size() << '\n';
     }
@@ -83,6 +85,40 @@ namespace Renderer{
                 indices.push_back(uniqueVertices[vertex]);
             }     
         }
+    }
+
+    void Model::createVertexBuffer(){
+        assert(vertices.size() >= 3 && "Vertex count must be at least 3.");
+        VkDeviceSize bufferSize = sizeof(Model::Vertex) * vertices.size();
+
+        vertexBuffer = std::make_unique<Buffer>(
+            device,
+            vertices.size(),
+            bufferSize,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        vertexBuffer->writeDeviceLocalBuffer((void *)vertices.data());
+    }
+
+    void Model::createIndexBuffer(){
+        indexCount = static_cast<uint32_t>(indices.size());
+        hasIndexBuffer = indexCount > 0;
+        if (!hasIndexBuffer)
+            return;
+
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
+
+        indexBuffer = std::make_unique<Buffer>(
+            device,
+            indexCount,
+            bufferSize,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        indexBuffer->writeDeviceLocalBuffer((void *)indices.data());
     }
 
     std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(){

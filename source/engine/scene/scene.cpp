@@ -17,8 +17,8 @@ namespace Renderer{
         std::shared_ptr<Renderer::Model> spongebob = Renderer::Model::createModelFromFile(device, "../source/models/spongebob.obj");
         models[spongebob->getId()] = spongebob;
 
-        //std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
-        //models[smoothVase->getId()] = smoothVase;
+        std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
+        models[smoothVase->getId()] = smoothVase;
     }
 
     void Scene::loadTexturesWithSampler(Device& device, unsigned int samplerId){
@@ -27,9 +27,9 @@ namespace Renderer{
         spongeTexture->samplerId = samplerId;
         textures[spongeTexture->getId()] = spongeTexture;
 
-        /*std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
+        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
         sampleImage->samplerId = samplerId;
-        textures[sampleImage->getId()] = sampleImage;*/
+        textures[sampleImage->getId()] = sampleImage;
     }
 
     void Scene::createObject(){
