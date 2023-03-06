@@ -287,8 +287,6 @@ namespace Renderer{
     }
 
     void RenderSystem::cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
-        assert(cullPipeline != nullptr && "Cannot run GPU-based culling without compute pipeline.");
-
         cullPipeline->bind(commandBuffer);
 
         uint32_t setIndex = (frameIndex + SwapChain::MAX_FRAMES_IN_FLIGHT) * 1; // Multiply by number of groups of uniform sets that come beforehand
