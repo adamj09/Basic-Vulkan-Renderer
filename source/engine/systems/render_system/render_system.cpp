@@ -53,9 +53,6 @@ namespace Renderer{
         scene.createObject();
         scene.objects.at(0).objectInfo.modelId = 0; // spongebob model
         scene.objects.at(0).objectInfo.diffuseId = 0; // spongebob texture
-        scene.objects.at(0).objectInfo.modelMatrix = scene.objects.at(0).transform.mat4();
-        scene.objects.at(0).objectInfo.normalMatrix = scene.objects.at(0).transform.normalMatrix();
-
         scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
@@ -63,9 +60,6 @@ namespace Renderer{
         scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 1; // sample model
         scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
-        scene.objects.at(1).objectInfo.modelMatrix = scene.objects.at(1).transform.mat4();
-        scene.objects.at(1).objectInfo.normalMatrix = scene.objects.at(1).transform.normalMatrix();
-
         scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
@@ -91,7 +85,6 @@ namespace Renderer{
         }
 
         // Send indirect commands to GPU memory (2 buffers are need for double-buffering)
-        indirectCommands.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         indirectCommandsBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
         for(int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
             indirectCommandsBuffers[i] = std::make_unique<Buffer>(
@@ -266,35 +259,31 @@ namespace Renderer{
 
          for(int i = 0; i < scene.objects.size(); i++){
             auto obj = scene.objects.at(i);
-            objectInfo.diffuseId = obj.getId();
-            objectInfo.modelId = obj.getId();
-            objectInfo.modelMatrix = obj.transform.mat4();
-            objectInfo.normalMatrix = obj.transform.normalMatrix();
+            obj.objectInfo.diffuseId = obj.getId();
+            obj.objectInfo.modelId = obj.getId();
+            obj.objectInfo.modelMatrix = obj.transform.mat4();
+            obj.objectInfo.normalMatrix = obj.transform.normalMatrix();
             
-            objectInfoBuffers[frameIndex]->writeToBuffer(&objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * i));
+            objectInfoBuffers[frameIndex]->writeToBuffer(&obj.objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * i));
             objectInfoBuffers[frameIndex]->flush();
         }
     }
 
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
         renderPipeline->bind(commandBuffer);
-
-        for(size_t i = 0; i < scene.objects.size(); i++){
+    
+        for(size_t i = 0; i < scene.models.size(); i++){
             uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
-        }
 
-        for(size_t i = 0; i < scene.models.size(); i++){
             VkBuffer vertexBuffer[] = {scene.models.at(i)->getVertexBuffer()};
             VkDeviceSize offsets[] = {0};
-
+        
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffer, offsets);
             vkCmdBindIndexBuffer(commandBuffer, scene.models.at(i)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
             
-            vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+            vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
         }
-
-        //vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
     }
 
     void RenderSystem::cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){

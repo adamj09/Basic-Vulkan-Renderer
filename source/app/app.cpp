@@ -66,38 +66,4 @@ namespace Application{
         }
         vkDeviceWaitIdle(device.getDevice());
     }
-
-    /*void App::createObjects(){
-        //Sampler for testing
-        Renderer::Sampler::SamplerConfig textureSamplerConfig{};
-        textureSamplerConfig.anisotropyEnable = VK_TRUE;
-        textureSamplerConfig.maxAnisotropy = 16.f;
-        textureSamplerConfig.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        textureSamplerConfig.maxLod = 100.f;
-        textureSampler = Renderer::Sampler::createSampler(device, textureSamplerConfig);
-
-        // Materials for testing
-        auto spongeMaterial = Renderer::Material::createMaterial();
-        spongeMaterial.diffuseTextureId = spongeTexture->getId();
-        scene.materials.emplace(spongeMaterial.getId(), spongeMaterial);
-
-        auto sampleMaterial = Renderer::Material::createMaterial();
-        sampleMaterial.diffuseTextureId = sampleImage->getId();
-        scene.materials.emplace(sampleMaterial.getId(), sampleMaterial);
-
-        auto sampleObject = Renderer::Object::createObject();
-        sampleObject.modelId = spongebob->getId();
-        sampleObject.materialId = spongeMaterial.getId();
-        sampleObject.transform.translation = {1.5f, .5f, 0.f};
-        sampleObject.transform.scale = {1.f, 1.f, 1.f};
-        sampleObject.transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-        scene.objects.emplace(sampleObject.getId(), sampleObject);
-
-        auto vase = Renderer::Object::createObject();
-        vase.modelId = smoothVase->getId();
-        vase.transform.translation = {-.5f, .5f, 0.f};
-        vase.transform.scale = {4.f, 4.f, 4.f};
-        vase.materialId = sampleMaterial.getId();
-        scene.objects.emplace(vase.getId(), vase);
-    }*/
 }

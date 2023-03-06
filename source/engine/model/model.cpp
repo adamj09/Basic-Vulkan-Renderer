@@ -27,8 +27,8 @@ namespace Renderer{
         loadModel(filepath);
         createVertexBuffer();
         createIndexBuffer();
-        std::cout << filepath << " vertex count: " << vertices.size() << '\n';
-        std::cout << filepath << " index count: " << indices.size() << '\n';
+        std::cout << filepath << " vertex count: " << vertexCount << '\n';
+        std::cout << filepath << " index count: " << indexCount << '\n';
     }
 
     std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filepath){
@@ -88,6 +88,7 @@ namespace Renderer{
     }
 
     void Model::createVertexBuffer(){
+        vertexCount = static_cast<uint32_t>(vertices.size());
         assert(vertices.size() >= 3 && "Vertex count must be at least 3.");
         VkDeviceSize bufferSize = sizeof(Model::Vertex) * vertices.size();
 
