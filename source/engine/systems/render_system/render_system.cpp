@@ -272,15 +272,15 @@ namespace Renderer{
     void RenderSystem::drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
         renderPipeline->bind(commandBuffer);
     
-        for(size_t i = 0; i < scene.models.size(); i++){
+        for(size_t i = 0; i < scene.objects.size(); i++){
             uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
 
-            VkBuffer vertexBuffer[] = {scene.models.at(i)->getVertexBuffer()};
+            VkBuffer vertexBuffer[] = {scene.models.at(scene.objects.at(i).objectInfo.modelId)->getVertexBuffer()};
             VkDeviceSize offsets[] = {0};
         
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffer, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, scene.models.at(i)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, scene.models.at(scene.objects.at(i).objectInfo.modelId)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
             
             vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
         }
