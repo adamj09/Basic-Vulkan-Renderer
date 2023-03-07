@@ -38,6 +38,8 @@ namespace Renderer{
 
             void createComputePipelineLayout();
             void createComputePipeline();
+
+            void benis();
             
             size_t padUniformBufferSize(size_t originalSize);
 

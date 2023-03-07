@@ -39,7 +39,7 @@ namespace Renderer{
                 glm::vec3 boundingSphereCenter;
 
                 glm::mat4 modelMatrix{1.f};
-                glm::mat3 normalMatrix{1.f};
+                glm::mat4 normalMatrix{1.f};
             } objectInfo;
 
             using Map = std::unordered_map<unsigned int, Object>;

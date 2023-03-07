@@ -46,6 +46,7 @@ namespace Application{
             cameraController.moveSpeed = (0.0035f);
             cameraController.lookSpeed = (0.0035f);
             cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
+            camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
             float aspect = renderer.getAspectRatio();
             camera.setPerspectiveProjection(glm::radians(90.f), aspect, 0.1f, 100.f);
 

@@ -8,10 +8,12 @@
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>
+#include <iostream>
 
 namespace Renderer{
     RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) 
     : device{device}, renderPass{renderPass}{
+        benis();
         setupScene();
 
         createDrawIndirectCommands();
@@ -105,7 +107,7 @@ namespace Renderer{
         size_t bufferSize = objectInfoDynamicAlignment * scene.objects.size();
 
         objectInfoBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        for(int i =0; i < objectInfoBuffers.size(); i++){
+        for(int i = 0; i < objectInfoBuffers.size(); i++){
             objectInfoBuffers[i] = std::make_unique<Buffer>(
                 device, 
                 1, 

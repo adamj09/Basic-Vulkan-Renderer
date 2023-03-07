@@ -28,18 +28,18 @@ namespace Renderer{
 
     void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
         assert(glm::abs(newAspect - std::numeric_limits<float>::epsilon()) > 0.0f);
-        const float tanHalfFovy = tan(newFovy / 2.f);
-        projectionMatrix = glm::mat4{0.0f};
-        projectionMatrix[0][0] = 1.f / (newAspect * tanHalfFovy);
-        projectionMatrix[1][1] = 1.f / (tanHalfFovy);
-        projectionMatrix[2][2] = newFar / (newFar - newNear);
-        projectionMatrix[2][3] = 1.f;
-        projectionMatrix[3][2] = -(newFar * newNear) / (newFar - newNear);
-
         fovy = newFovy;
         aspect = newAspect;
         near = newNear;
         far = newFar;
+
+        const float tanHalfFovy = tan(fovy / 2.f);
+        projectionMatrix = glm::mat4{0.0f};
+        projectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);
+        projectionMatrix[1][1] = 1.f / (tanHalfFovy);
+        projectionMatrix[2][2] = far / (far - near);
+        projectionMatrix[2][3] = 1.f;
+        projectionMatrix[3][2] = -(far * near) / (far - near);
     }
 
     BoundingBox Camera::createFrustumViewBounds(){
