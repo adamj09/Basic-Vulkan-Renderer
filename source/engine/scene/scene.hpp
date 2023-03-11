@@ -12,19 +12,6 @@
 namespace Renderer{
     class Scene{
         public:
-            struct SceneUniform{  
-                glm::mat4 projection{1.f};
-                glm::mat4 view{1.f};
-                glm::mat4 inverseView{1.f};
-
-                BoundingBox viewBoundingBox;
-
-                bool enableOcclusionCulling = true;
-                bool enableFrustumCulling = true;
-
-                uint32_t instanceCount = 0;
-            } sceneUniform;
-
             Scene();
 
             void save();

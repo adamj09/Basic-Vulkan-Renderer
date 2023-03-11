@@ -27,13 +27,15 @@ layout(set = 0, binding = 1) uniform objectDubo{
 
   uint boundSphereRadius;
   vec3 boundingSphereCenter;
-
-  mat4 modelMatrix;
-  mat3 normalMatrix;
 } object;
 
 layout(set = 0, binding = 2) uniform sampler texSampler;
 layout(set = 0, binding = 3) uniform texture2D textures[1];
+
+layout(push_constant) uniform Push {
+  mat4 modelMatrix;
+  mat4 normalMatrix;
+} push;
 
 void main(){
   vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;

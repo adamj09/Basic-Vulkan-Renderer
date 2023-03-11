@@ -17,8 +17,8 @@ namespace Renderer{
         createDrawIndirectCommands();
 
         createUniformBuffers();
-        createVertexBuffers();
-        createIndexBuffer();
+        //createVertexBuffers();
+        //createIndexBuffer();
 
         setupDescriptorSets();
 
@@ -53,15 +53,15 @@ namespace Renderer{
 
         // spongebob object
         scene.createObject();
-        scene.objects.at(0).objectInfo.modelId = 0; // spongebob model
-        scene.objects.at(0).objectInfo.diffuseId = 0; // spongebob texture
+        scene.objects.at(0).modelId = 0; // spongebob model
+        scene.objects.at(0).diffuseId = 0; // spongebob texture
         scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
         // sample object
         scene.createObject();
-        scene.objects.at(1).objectInfo.modelId = 1; // sample model
-        scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
+        scene.objects.at(1).modelId = 1; // sample model
+        scene.objects.at(1).diffuseId = 1; // sample texture
         scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
         scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
     }
@@ -72,7 +72,7 @@ namespace Renderer{
         for(uint32_t i = 0; i < scene.models.size(); i++){
             uint32_t currentInstanceCount = 0;
             for(uint32_t j = 0; j < scene.objects.size(); j++)
-                if(scene.objects.at(j).objectInfo.modelId == scene.models.at(i)->getId())
+                if(scene.objects.at(j).modelId == scene.models.at(i)->getId())
                     currentInstanceCount++;
 
             VkDrawIndexedIndirectCommand newIndirectCommand;
@@ -103,7 +103,7 @@ namespace Renderer{
 
     void RenderSystem::createUniformBuffers(){
         // Per-object info buffers
-        objectInfoDynamicAlignment = padUniformBufferSize(sizeof(Object::ObjectInfo));
+        objectInfoDynamicAlignment = padUniformBufferSize(sizeof(ObjectInfo));
         size_t bufferSize = objectInfoDynamicAlignment * scene.objects.size();
 
         objectInfoBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -125,7 +125,7 @@ namespace Renderer{
             sceneUniformBuffers[i] = std::make_unique<Buffer>(
                 device, 
                 1, 
-                sizeof(Scene::SceneUniform), 
+                sizeof(SceneUniform), 
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
                 VK_SHARING_MODE_EXCLUSIVE, 
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -241,13 +241,18 @@ namespace Renderer{
     }
 
     void RenderSystem::createGraphicsPipelineLayout(){
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(ModelMatrixInfo);
+
         auto layout = renderSetLayout->getLayout();
         VkPipelineLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layoutInfo.setLayoutCount = 1;
         layoutInfo.pSetLayouts = &layout;
-        layoutInfo.pushConstantRangeCount = 0;
-        layoutInfo.pPushConstantRanges = nullptr;
+        layoutInfo.pushConstantRangeCount = 1;
+        layoutInfo.pPushConstantRanges = &pushConstantRange;
 
         if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &renderPipelineLayout) != VK_SUCCESS)
             throw std::runtime_error("Failed to create graphics pipeline layout.");
@@ -269,29 +274,27 @@ namespace Renderer{
 
     void RenderSystem::updateSceneUniform(Camera camera, uint32_t frameIndex){
         // TODO: add check to see if camera view changed so needless updates are not performed
-        scene.sceneUniform.projection = camera.getProjection();
-        scene.sceneUniform.view = camera.getView();
-        scene.sceneUniform.inverseView = camera.getInverseView();
+        sceneUniform.projection = camera.getProjection();
+        sceneUniform.view = camera.getView();
+        sceneUniform.inverseView = camera.getInverseView();
 
-        scene.sceneUniform.enableFrustumCulling = camera.enableFrustumCulling;
-        scene.sceneUniform.enableOcclusionCulling = false;
+        sceneUniform.enableFrustumCulling = camera.enableFrustumCulling;
+        sceneUniform.enableOcclusionCulling = false;
 
-        if(scene.sceneUniform.enableFrustumCulling)
-            scene.sceneUniform.viewBoundingBox = camera.createFrustumViewBounds();
+        if(sceneUniform.enableFrustumCulling)
+            sceneUniform.viewBoundingBox = camera.createFrustumViewBounds();
 
-        scene.sceneUniform.instanceCount = totalInstanceCount;
+        sceneUniform.instanceCount = totalInstanceCount;
 
-        sceneUniformBuffers[frameIndex]->writeToBuffer(&scene.sceneUniform);
+        sceneUniformBuffers[frameIndex]->writeToBuffer(&sceneUniform);
         sceneUniformBuffers[frameIndex]->flush();
 
          for(int i = 0; i < scene.objects.size(); i++){
             auto obj = scene.objects.at(i);
-            obj.objectInfo.diffuseId = obj.getId();
-            obj.objectInfo.modelId = obj.getId();
-            obj.objectInfo.modelMatrix = obj.transform.mat4();
-            obj.objectInfo.normalMatrix = obj.transform.normalMatrix();
+            objectInfo.diffuseId = obj.diffuseId;
+            objectInfo.modelId = obj.modelId;
             
-            objectInfoBuffers[frameIndex]->writeToBuffer(&obj.objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * i));
+            objectInfoBuffers[frameIndex]->writeToBuffer(&objectInfo, objectInfoDynamicAlignment, static_cast<uint32_t>(objectInfoDynamicAlignment * i));
             objectInfoBuffers[frameIndex]->flush();
         }
     }
@@ -300,14 +303,20 @@ namespace Renderer{
         renderPipeline->bind(commandBuffer);
     
         for(size_t i = 0; i < scene.objects.size(); i++){
+            ModelMatrixInfo push{};
+            push.modelMatrix = scene.objects.at(i).transform.mat4();
+            push.normalMatrix = scene.objects.at(i).transform.normalMatrix();
+
+            vkCmdPushConstants(commandBuffer, renderPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ModelMatrixInfo), &push);
+
             uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
 
-            VkBuffer vertexBuffer[] = {scene.models.at(scene.objects.at(i).objectInfo.modelId)->getVertexBuffer()};
+            VkBuffer vertexBuffer[] = {scene.models.at(scene.objects.at(i).modelId)->getVertexBuffer()};
             VkDeviceSize offsets[] = {0};
         
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffer, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, scene.models.at(scene.objects.at(i).objectInfo.modelId)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, scene.models.at(scene.objects.at(i).modelId)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
             
             vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
         }

@@ -35,7 +35,6 @@ namespace Renderer{
     void Scene::createObject(){
         Object newObject = Object::createObject();
         objects.emplace(newObject.getId(), newObject);
-        sceneUniform.instanceCount++;
     }
 
     void Scene::createSampler(Device& device, Sampler::SamplerConfig config){

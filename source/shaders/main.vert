@@ -30,15 +30,17 @@ layout(set = 0, binding = 1) uniform objectDubo{
 
   uint boundSphereRadius;
   vec3 boundingSphereCenter;
-  
-  mat4 modelMatrix;
-  mat4 normalMatrix;
 } object;
 
+layout(push_constant) uniform Push {
+  mat4 modelMatrix;
+  mat4 normalMatrix;
+} push;
+
 void main(){
-  vec4 positionWorld = object.modelMatrix * vec4(inPosition, 1.0);
+  vec4 positionWorld = push.modelMatrix * vec4(inPosition, 1.0);
   gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
-  fragNormalWorld = normalize(mat3(object.normalMatrix) * inNormal);
+  fragNormalWorld = normalize(mat3(push.normalMatrix) * inNormal);
   fragPosWorld = positionWorld.xyz;
   fragColor = inColor;
   fragTexCoord = inTexCoord;
