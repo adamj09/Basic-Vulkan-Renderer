@@ -26,7 +26,6 @@ namespace Renderer{
 
     class Camera{
         public:
-            //void setOrthographicProjection(float newLeft, float newRight, float newTop, float newBottom, float newNear, float newFar);
             void setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar);
             void setViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up = glm::vec3{0.f, -1.f, 0.f});
             void setViewTarget(glm::vec3 position, glm::vec3 target, glm::vec3 up = glm::vec3{0.f, -1.f, 0.f});

@@ -8,24 +8,14 @@
 namespace Renderer{
 
     void BoundingBox::reset(){
-        nearPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
-        farPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
-        leftPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
-        rightPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
-        topPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
-        bottomPlane = {glm::vec3{0.f, 1.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        nearPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        farPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        leftPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        rightPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        topPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
+        bottomPlane = {glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 0.f}};
     }
     
-    /*void Camera::setOrthographicProjection(float newLeft, float newRight, float newTop, float newBottom, float newNear, float newFar) {
-        projectionMatrix = glm::mat4{1.0f};
-        projectionMatrix[0][0] = 2.f / (newRight - newLeft);
-        projectionMatrix[1][1] = 2.f / (newBottom - newTop);
-        projectionMatrix[2][2] = 1.f / (newFar - newNear);
-        projectionMatrix[3][0] = -(newRight + newLeft) / (newRight - newLeft);
-        projectionMatrix[3][1] = -(newBottom + newTop) / (newBottom - newTop);
-        projectionMatrix[3][2] = -newNear / (newFar - newNear);
-    }*/
-
     void Camera::setPerspectiveProjection(float newFovy, float newAspect, float newNear, float newFar) {
         assert(glm::abs(newAspect - std::numeric_limits<float>::epsilon()) > 0.0f);
         fovy = newFovy;

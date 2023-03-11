@@ -30,6 +30,14 @@ namespace Renderer{
 
     class Object{
         public:
+            struct ObjectInfo{
+                unsigned int modelId;
+                unsigned int diffuseId;
+
+                unsigned int boundingSphereRadius;
+                glm::vec3 boundingSphereCenter;
+            } objectInfo;
+
             using Map = std::unordered_map<unsigned int, Object>;
 
             static Object createObject() {
@@ -38,9 +46,6 @@ namespace Renderer{
             }
 
             TransformComponent transform{};
-
-            unsigned int diffuseId;
-            unsigned int modelId;
 
             unsigned int getId() { return id; }
 

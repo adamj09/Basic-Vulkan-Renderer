@@ -18,27 +18,6 @@ namespace Renderer{
                 glm::mat4 normalMatrix{1.f};
             };
 
-            struct SceneUniform{  
-                glm::mat4 projection{1.f};
-                glm::mat4 view{1.f};
-                glm::mat4 inverseView{1.f};
-
-                BoundingBox viewBoundingBox;
-
-                bool enableOcclusionCulling = true;
-                bool enableFrustumCulling = true;
-
-                uint32_t instanceCount = 0;
-            } sceneUniform;
-
-            struct ObjectInfo{
-                unsigned int modelId;
-                unsigned int diffuseId;
-
-                unsigned int boundingSphereRadius;
-                glm::vec3 boundingSphereCenter;
-            } objectInfo;
-
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
