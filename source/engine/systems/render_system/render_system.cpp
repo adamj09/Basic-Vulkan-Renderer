@@ -13,7 +13,6 @@
 namespace Renderer{
     RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) 
     : device{device}, renderPass{renderPass}{
-        benis();
         setupScene();
 
         createDrawIndirectCommands();
