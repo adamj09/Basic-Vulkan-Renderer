@@ -38,8 +38,8 @@ namespace Renderer{
             std::vector<Vertex> getVertices() { return vertices; }
             std::vector<uint32_t> getIndices() { return indices; }
 
-            uint32_t getVertexCount() { return vertexCount; }
-            uint32_t getIndexCount() { return indexCount; }
+            uint32_t getVertexCount() { return static_cast<uint32_t>(vertices.size()); }
+            uint32_t getIndexCount() { return static_cast<uint32_t>(indices.size()); }
             
         private:    
             void loadModel(const std::string &filepath);

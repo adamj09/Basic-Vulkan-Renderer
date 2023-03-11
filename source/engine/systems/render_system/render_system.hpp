@@ -31,6 +31,9 @@ namespace Renderer{
             void createDrawIndirectCommands();
             void createUniformBuffers();
 
+            void createVertexBuffers();
+            void createIndexBuffer();
+
             void setupDescriptorSets();
 
             void createGraphicsPipelineLayout();
@@ -38,8 +41,6 @@ namespace Renderer{
 
             void createComputePipelineLayout();
             void createComputePipeline();
-
-            void benis();
             
             size_t padUniformBufferSize(size_t originalSize);
 
@@ -67,13 +68,15 @@ namespace Renderer{
             std::unique_ptr<DescriptorSetLayout> cullSetLayout;
             std::unique_ptr<DescriptorSetLayout> renderSetLayout;
 
-            std::unique_ptr<Buffer> globalVertexBuffer;
+            std::unique_ptr<Buffer> vertexBuffer;
             std::vector<Model::Vertex> vertices{};
             uint32_t totalVertexCount = 0;
 
-            std::unique_ptr<Buffer> globalIndexBuffer;
+            std::unique_ptr<Buffer> indexBuffer;
             std::vector<uint32_t> indices{};
             uint32_t totalIndexCount = 0;
+
+            std::unique_ptr<Buffer> instanceBuffer;
 
             uint32_t totalInstanceCount = 0;
     };

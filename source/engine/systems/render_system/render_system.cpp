@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>
-#include <iostream>
 
 namespace Renderer{
     RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) 
@@ -18,6 +17,8 @@ namespace Renderer{
         createDrawIndirectCommands();
 
         createUniformBuffers();
+        createVertexBuffers();
+        createIndexBuffer();
 
         setupDescriptorSets();
 
@@ -131,6 +132,31 @@ namespace Renderer{
             );
             sceneUniformBuffers[i]->map();
         } 
+    }
+
+    void RenderSystem::createVertexBuffers(){
+        for(size_t i = 0; i < scene.models.size(); i++){
+            vertices.reserve(sizeof(Model::Vertex) * scene.models.at(i)->getVertexCount());
+            vertices.insert(vertices.end(), scene.models.at(i)->getVertices().begin(), scene.models.at(i)->getVertices().end());
+        }
+
+        assert(vertices.size() >= 3 && "Vertex count must be at least 3.");
+
+        vertexBuffer = std::make_unique<Buffer>(
+            device,
+            vertices.size(),
+            sizeof(Model::Vertex) * vertices.size(),
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        vertexBuffer->writeDeviceLocalBuffer(vertices.data());
+
+        
+    }
+
+    void RenderSystem::createIndexBuffer(){
+
     }
 
     void RenderSystem::setupDescriptorSets(){
