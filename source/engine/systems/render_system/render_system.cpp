@@ -151,8 +151,6 @@ namespace Renderer{
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
         vertexBuffer->writeDeviceLocalBuffer(vertices.data());
-
-        
     }
 
     void RenderSystem::createIndexBuffer(){

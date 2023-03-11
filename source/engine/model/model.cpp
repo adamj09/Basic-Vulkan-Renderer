@@ -127,6 +127,7 @@ namespace Renderer{
         bindingDescriptions[0].binding = 0;
         bindingDescriptions[0].stride = sizeof(Vertex);
         bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
         return bindingDescriptions;
     }
 
@@ -136,6 +137,7 @@ namespace Renderer{
         attributeDescriptions[1] = {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour)};      // Vertex Colour
         attributeDescriptions[2] = {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)};      // Normals
         attributeDescriptions[3] = {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoords)};      // TexCoords/UV
+
         return attributeDescriptions;
     }
 }

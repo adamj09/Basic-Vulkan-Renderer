@@ -55,7 +55,7 @@ namespace Application{
                 // Update
                 renderSystem.updateSceneUniform(camera, frameIndex);
                 // Cull Scene
-                //renderSystem.cullScene(commandBuffer, frameIndex);
+                renderSystem.cullScene(commandBuffer, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects
