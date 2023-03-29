@@ -40,5 +40,10 @@ layout(push_constant) uniform Push {
 void main(){
   vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
   vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
-  outColor = texture(sampler2D(textures[object.diffuseId], texSampler), inFragTexCoord);
+  if(object.diffuseId != -1){
+    outColor = texture(sampler2D(textures[object.diffuseId], texSampler), inFragTexCoord) * vec4(inFragColor, 1.0);
+  }
+  else{
+    outColor = vec4(inFragColor, 1.0);
+  }
 }

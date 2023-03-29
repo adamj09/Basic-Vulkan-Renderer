@@ -32,7 +32,7 @@ namespace Renderer{
         public:
             struct ObjectInfo{
                 unsigned int modelId;
-                unsigned int diffuseId;
+                int diffuseId;
 
                 unsigned int boundingSphereRadius;
                 glm::vec3 boundingSphereCenter;

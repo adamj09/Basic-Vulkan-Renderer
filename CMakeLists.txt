@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.23.2)
 set(NAME renderer)
 
 # Build type, set to "Debug" for debugging and "Release" for full release build with all optimizations
-set(CMAKE_BUILD_TYPE Debug) 
+set(CMAKE_BUILD_TYPE Release) 
 
 # Sets the compiler being used for the project
 message(STATUS "Using ${CMAKE_GENERATOR}")
