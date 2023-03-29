@@ -19,6 +19,7 @@ namespace Renderer{
             VkRenderPass getRenderPass() { return renderPass; }
             VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
             float extentAspectRatio() { return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height); }
+            VkSwapchainKHR getSwapChain() { return swapChain; }
 
             // Other functions
             bool compareSwapFormats(const SwapChain& swapChain) const { return swapChain.swapChainDepthFormat == swapChainDepthFormat && 

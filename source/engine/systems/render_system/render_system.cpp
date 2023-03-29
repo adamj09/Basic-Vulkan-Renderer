@@ -58,12 +58,18 @@ namespace Renderer{
         scene.objects.at(0).transform.translation = {1.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
+        scene.createObject();
+        scene.objects.at(1).objectInfo.modelId = 0; // spongebob model
+        scene.objects.at(1).objectInfo.diffuseId = 0; // spongebob texture
+        scene.objects.at(1).transform.translation = {1.5f, .5f, 15.f};
+        scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
+
         // sample object
         scene.createObject();
-        scene.objects.at(1).objectInfo.modelId = 1; // sample model
-        scene.objects.at(1).objectInfo.diffuseId = 1; // sample texture
-        scene.objects.at(1).transform.translation = {-.5f, .5f, 0.f};
-        scene.objects.at(1).transform.scale = {4.f, 4.f, 4.f};
+        scene.objects.at(2).objectInfo.modelId = 1; // sample model
+        scene.objects.at(2).objectInfo.diffuseId = 1; // sample texture
+        scene.objects.at(2).transform.translation = {-.5f, .5f, 0.f};
+        scene.objects.at(2).transform.scale = {4.f, 4.f, 4.f};
     }
 
     void RenderSystem::createDrawIndirectCommands(){

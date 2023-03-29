@@ -27,7 +27,7 @@ namespace Renderer{
             swapChain = nullptr;
         }
 
-        for (int i = 0; i < depthImages.size(); i++) {
+        for (int i = 0; i < colourImages.size(); i++) {
             vkDestroyImageView(device.getDevice(), colourImageViews[i], nullptr);
             vkDestroyImage(device.getDevice(), colourImages[i], nullptr);
             vkFreeMemory(device.getDevice(), colourImageMemories[i], nullptr);
@@ -84,6 +84,8 @@ namespace Renderer{
         swapChainInfo.preTransform = swapChainSupport.capabilities.currentTransform;
         swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         swapChainInfo.clipped = VK_TRUE;
+        if(oldSwapChain != nullptr)
+            swapChainInfo.oldSwapchain = oldSwapChain->getSwapChain();
         
         QueueFamilyIndices indices = device.getPhysicalQueueFamilies();
         uint32_t queueFamilyIndices[] = { indices.graphicsAndComputeFamily, indices.presentFamily };
