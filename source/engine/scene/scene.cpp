@@ -17,6 +17,9 @@ namespace Renderer{
         std::shared_ptr<Renderer::Model> tree = Renderer::Model::createModelFromFile(device, "../source/models/tree_final.obj");
         models[tree->getId()] = tree;
 
+        std::shared_ptr<Renderer::Model> car = Renderer::Model::createModelFromFile(device, "../source/models/bmw.obj");
+        models[car->getId()] = car;
+
         std::shared_ptr<Renderer::Model> spongebob = Renderer::Model::createModelFromFile(device, "../source/models/spongebob.obj");
         models[spongebob->getId()] = spongebob;
 

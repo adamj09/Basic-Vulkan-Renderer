@@ -52,17 +52,19 @@ namespace Renderer{
         scene.loadModels(device);
 
         scene.createObject();
-        scene.objects.at(0).objectInfo.modelId = 0; // tree model
-        scene.objects.at(0).objectInfo.diffuseId = 2; // tree texture
+        scene.objects.at(0).objectInfo.modelId = 1; // car model
+        scene.objects.at(0).objectInfo.diffuseId = -1; // car texture
         scene.objects.at(0).transform.translation = {3.5f, .5f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
+        scene.objects.at(0).transform.scale = {0.01f, 0.01f, 0.01f};
 
         // spongebob object
         scene.createObject();
-        scene.objects.at(1).objectInfo.modelId = 1; // spongebob model
+        scene.objects.at(1).objectInfo.modelId = 2; // spongebob model
         scene.objects.at(1).objectInfo.diffuseId = 1; // spongebob texture
-        scene.objects.at(1).transform.translation = {1.5f, .5f, 0.f};
-        scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
+        scene.objects.at(1).transform.translation = {3.8f, 0.f, -0.4f};
+        scene.objects.at(1).transform.rotation = {glm::radians(180.f), glm::radians(90.f), 0.f};
+        scene.objects.at(1).transform.scale = {1.2f, 1.2f, 1.2f};
 
         /*scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 0; // spongebob model
