@@ -14,8 +14,8 @@ namespace Renderer{
     }
 
     void Scene::loadModels(Device& device){
-        std::shared_ptr<Renderer::Model> tree = Renderer::Model::createModelFromFile(device, "../source/models/tree_final.obj");
-        models[tree->getId()] = tree;
+        std::shared_ptr<Renderer::Model> sponza = Renderer::Model::createModelFromFile(device, "../source/models/sponza.obj");
+        models[sponza->getId()] = sponza;
 
         std::shared_ptr<Renderer::Model> car = Renderer::Model::createModelFromFile(device, "../source/models/bmw.obj");
         models[car->getId()] = car;
@@ -29,7 +29,7 @@ namespace Renderer{
 
     void Scene::loadTexturesWithSampler(Device& device, unsigned int samplerId){
         assert(samplers.count(samplerId) != 0 && "No sampler with given ID exists.");
-        std::shared_ptr<Renderer::Texture> cathedralTexture = Renderer::Texture::createTextureFromFile(device, "../source/textures/kamen.png");
+        std::shared_ptr<Renderer::Texture> cathedralTexture = Renderer::Texture::createTextureFromFile(device, "../source/textures/KAMEN.png");
         cathedralTexture->samplerId = samplerId;
         textures[cathedralTexture->getId()] = cathedralTexture;
 
@@ -37,7 +37,7 @@ namespace Renderer{
         spongeTexture->samplerId = samplerId;
         textures[spongeTexture->getId()] = spongeTexture;
 
-        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/tree_texture.jpg");
+        std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
         sampleImage->samplerId = samplerId;
         textures[sampleImage->getId()] = sampleImage;
     }

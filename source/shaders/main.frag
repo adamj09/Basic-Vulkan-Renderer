@@ -37,13 +37,18 @@ layout(push_constant) uniform Push {
   mat4 normalMatrix;
 } push;
 
+const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
+const float AMBIENT = 0.05f;
+
 void main(){
   vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
   vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
-  if(object.diffuseId != -1){
-    outColor = texture(sampler2D(textures[object.diffuseId], texSampler), inFragTexCoord) * vec4(inFragColor, 1.0);
-  }
-  else{
-    outColor = vec4(inFragColor, 1.0);
-  }
+
+  float lightIntensity = max(dot(inFragNormalWorld, DIRECTION_TO_LIGHT), 0);
+  vec4 fragmentColor = vec4(inFragColor, 1.0) * lightIntensity + AMBIENT;
+
+  if(object.diffuseId != -1)
+    outColor = texture(sampler2D(textures[object.diffuseId], texSampler), inFragTexCoord) * fragmentColor;
+  else
+    outColor = vec4(inFragColor * lightIntensity + AMBIENT, 1.0);
 }

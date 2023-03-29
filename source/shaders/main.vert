@@ -37,15 +37,13 @@ layout(push_constant) uniform Push {
   mat4 normalMatrix;
 } push;
 
-const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
-const float AMBIENT = 0.05f;
-
 void main(){
   vec4 positionWorld = push.modelMatrix * vec4(inPosition, 1.0);
   gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
+
   fragNormalWorld = normalize(mat3(push.normalMatrix) * inNormal);
-  float lightIntensity = max(dot(fragNormalWorld, DIRECTION_TO_LIGHT), 0);
+
   fragPosWorld = positionWorld.xyz;
-  fragColor = inColor * lightIntensity + AMBIENT;
+  fragColor = inColor;
   fragTexCoord = inTexCoord;
 }
