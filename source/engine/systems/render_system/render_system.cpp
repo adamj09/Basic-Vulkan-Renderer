@@ -51,9 +51,10 @@ namespace Renderer{
         scene.loadTexturesWithSampler(device, 0);
         scene.loadModels(device);
 
+        // Car model
         scene.createObject();
         scene.objects.at(0).objectInfo.modelId = 1;
-        scene.objects.at(0).objectInfo.diffuseId = -1;
+        scene.objects.at(0).objectInfo.diffuseId = 3;
         scene.objects.at(0).transform.translation = {3.0f, 0.f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
         scene.objects.at(0).transform.scale = {0.01f, 0.01f, 0.01f};
@@ -66,12 +67,21 @@ namespace Renderer{
         scene.objects.at(1).transform.rotation = {glm::radians(180.f), glm::radians(315.f), 0.f};
         scene.objects.at(1).transform.scale = {1.2f, 1.2f, 1.2f};
 
+        // dragon model
         scene.createObject();
         scene.objects.at(2).objectInfo.modelId = 0;
         scene.objects.at(2).objectInfo.diffuseId = -1;
         scene.objects.at(2).transform.translation = {-5.0f, 0.f, 0.f};
-        scene.objects.at(2).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
+        scene.objects.at(2).transform.rotation = {glm::radians(180.f), glm::radians(180.f), 0.f};
         scene.objects.at(2).transform.scale = {3.5f, 3.5f, 3.5f};
+
+        // tree model
+        scene.createObject();
+        scene.objects.at(3).objectInfo.modelId = 4;
+        scene.objects.at(3).objectInfo.diffuseId = 4;
+        scene.objects.at(3).transform.translation = {-9.f, -2.f, 0.f};
+        scene.objects.at(3).transform.rotation = {0.f, 0.f, 0.f};
+        scene.objects.at(3).transform.scale = {2.f, 2.f, 2.f};
 
         /*scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 0; // spongebob model

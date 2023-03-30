@@ -25,6 +25,9 @@ namespace Renderer{
 
         std::shared_ptr<Renderer::Model> smoothVase = Renderer::Model::createModelFromFile(device, "../source/models/smooth_vase.obj");
         models[smoothVase->getId()] = smoothVase;
+
+        std::shared_ptr<Renderer::Model> tree = Renderer::Model::createModelFromFile(device, "../source/models/tree_final.obj");
+        models[tree->getId()] = tree;
     }
 
     void Scene::loadTexturesWithSampler(Device& device, unsigned int samplerId){
@@ -40,6 +43,14 @@ namespace Renderer{
         std::shared_ptr<Renderer::Texture> sampleImage = Renderer::Texture::createTextureFromFile(device, "../source/textures/milkyway.jpg");
         sampleImage->samplerId = samplerId;
         textures[sampleImage->getId()] = sampleImage;
+
+        std::shared_ptr<Renderer::Texture> blue = Renderer::Texture::createTextureFromFile(device, "../source/textures/blue.jpg");
+        blue->samplerId = samplerId;
+        textures[blue->getId()] = blue;
+
+        std::shared_ptr<Renderer::Texture> treeTexture = Renderer::Texture::createTextureFromFile(device, "../source/textures/tree_texture.jpg");
+        treeTexture->samplerId = samplerId;
+        textures[treeTexture->getId()] = treeTexture;
     }
 
     void Scene::createObject(){
