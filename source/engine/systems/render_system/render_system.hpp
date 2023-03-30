@@ -21,7 +21,7 @@ namespace Renderer{
             RenderSystem(Device& device, VkRenderPass renderPass);
             ~RenderSystem();
 
-            void updateSceneUniform(Camera camera, uint32_t frameIndex);
+            void updateSceneUniform(Camera camera, uint32_t frameIndex, float frametime);
             void cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
             void drawScene(VkCommandBuffer commandBuffer, uint32_t frameIndex);
 

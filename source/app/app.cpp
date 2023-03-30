@@ -53,7 +53,7 @@ namespace Application{
             if (auto commandBuffer = renderer.beginFrame()) {
                 int frameIndex = renderer.getFrameIndex();
                 // Update
-                renderSystem.updateSceneUniform(camera, frameIndex);
+                renderSystem.updateSceneUniform(camera, frameIndex, frameTime);
                 // Cull Scene
                 renderSystem.cullScene(commandBuffer, frameIndex);
                 // Start Renderpass

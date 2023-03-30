@@ -52,10 +52,11 @@ namespace Renderer{
         scene.loadModels(device);
 
         scene.createObject();
-        scene.objects.at(0).objectInfo.modelId = 0; // sponza model
-        scene.objects.at(0).objectInfo.diffuseId = 0; // sponza texture
-        scene.objects.at(0).transform.translation = {3.5f, .5f, 0.f};
+        scene.objects.at(0).objectInfo.modelId = 0;
+        scene.objects.at(0).objectInfo.diffuseId = -1;
+        scene.objects.at(0).transform.translation = {2.0f, 0.f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
+        scene.objects.at(0).transform.scale = {2.5f, 2.5f, 2.5f};
 
         // spongebob object
         scene.createObject();
@@ -283,7 +284,7 @@ namespace Renderer{
         );
     }
 
-    void RenderSystem::updateSceneUniform(Camera camera, uint32_t frameIndex){
+    void RenderSystem::updateSceneUniform(Camera camera, uint32_t frameIndex, float frametime){
         // TODO: add check to see if camera view changed so needless updates are not performed
         scene.sceneUniform.projection = camera.getProjection();
         scene.sceneUniform.view = camera.getView();
@@ -299,6 +300,8 @@ namespace Renderer{
 
         sceneUniformBuffers[frameIndex]->writeToBuffer(&scene.sceneUniform);
         sceneUniformBuffers[frameIndex]->flush();
+
+        scene.objects.at(0).transform.rotation.y += 0.01f;
 
         for(int i = 0; i < scene.objects.size(); i++){
             Object::ObjectInfo objectInfo;

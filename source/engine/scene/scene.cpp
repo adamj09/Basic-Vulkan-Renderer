@@ -14,8 +14,8 @@ namespace Renderer{
     }
 
     void Scene::loadModels(Device& device){
-        std::shared_ptr<Renderer::Model> sponza = Renderer::Model::createModelFromFile(device, "../source/models/sponza.obj");
-        models[sponza->getId()] = sponza;
+        std::shared_ptr<Renderer::Model> dragon = Renderer::Model::createModelFromFile(device, "../source/models/dragon.obj");
+        models[dragon->getId()] = dragon;
 
         std::shared_ptr<Renderer::Model> car = Renderer::Model::createModelFromFile(device, "../source/models/bmw.obj");
         models[car->getId()] = car;

@@ -38,11 +38,11 @@ layout(push_constant) uniform Push {
 } push;
 
 const vec3 DIRECTION_TO_LIGHT = normalize(vec3(1.0, -3.0, -1.0));
-const float AMBIENT = 0.05f;
+const float AMBIENT = 0.02f;
 
 void main(){
-  vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
-  vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
+  //vec3 cameraPosWorld = globalUBO.inverseView[3].xyz;
+  //vec3 viewDirection = normalize(cameraPosWorld - inFragPosWorld);
 
   float lightIntensity = max(dot(inFragNormalWorld, DIRECTION_TO_LIGHT), 0);
   vec4 fragmentColor = vec4(inFragColor, 1.0) * lightIntensity + AMBIENT;

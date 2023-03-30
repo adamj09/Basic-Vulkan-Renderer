@@ -42,7 +42,6 @@ void main(){
   gl_Position = globalUBO.projection * globalUBO.view * positionWorld;
 
   fragNormalWorld = normalize(mat3(push.normalMatrix) * inNormal);
-
   fragPosWorld = positionWorld.xyz;
   fragColor = inColor;
   fragTexCoord = inTexCoord;
