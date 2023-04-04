@@ -59,7 +59,7 @@ namespace Renderer{
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
         scene.objects.at(0).transform.scale = {0.01f, 0.01f, 0.01f};
 
-        // spongebob object
+        // Spongebob model
         scene.createObject();
         scene.objects.at(1).objectInfo.modelId = 2; // spongebob model
         scene.objects.at(1).objectInfo.diffuseId = 1; // spongebob texture
@@ -67,7 +67,7 @@ namespace Renderer{
         scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
         scene.objects.at(1).transform.scale = {1.2f, 1.2f, 1.2f};
 
-        // dragon model
+        // Dragon model
         scene.createObject();
         scene.objects.at(2).objectInfo.modelId = 0;
         scene.objects.at(2).objectInfo.diffuseId = -1;
@@ -75,7 +75,7 @@ namespace Renderer{
         scene.objects.at(2).transform.rotation = {glm::radians(180.f), glm::radians(180.f), 0.f};
         scene.objects.at(2).transform.scale = {3.5f, 3.5f, 3.5f};
 
-        // tree model
+        // Tree model
         scene.createObject();
         scene.objects.at(3).objectInfo.modelId = 4;
         scene.objects.at(3).objectInfo.diffuseId = 4;
