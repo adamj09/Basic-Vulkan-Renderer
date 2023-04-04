@@ -54,7 +54,7 @@ namespace Renderer{
         // Car model
         scene.createObject();
         scene.objects.at(0).objectInfo.modelId = 1;
-        scene.objects.at(0).objectInfo.diffuseId = 3;
+        scene.objects.at(0).objectInfo.diffuseId = -1;
         scene.objects.at(0).transform.translation = {3.0f, 0.f, 0.f};
         scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
         scene.objects.at(0).transform.scale = {0.01f, 0.01f, 0.01f};
@@ -64,7 +64,7 @@ namespace Renderer{
         scene.objects.at(1).objectInfo.modelId = 2; // spongebob model
         scene.objects.at(1).objectInfo.diffuseId = 1; // spongebob texture
         scene.objects.at(1).transform.translation = {-2.0f, 0.f, -0.4f};
-        scene.objects.at(1).transform.rotation = {glm::radians(180.f), glm::radians(315.f), 0.f};
+        scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
         scene.objects.at(1).transform.scale = {1.2f, 1.2f, 1.2f};
 
         // dragon model
@@ -82,19 +82,6 @@ namespace Renderer{
         scene.objects.at(3).transform.translation = {-9.f, -2.f, 0.f};
         scene.objects.at(3).transform.rotation = {0.f, 0.f, 0.f};
         scene.objects.at(3).transform.scale = {2.f, 2.f, 2.f};
-
-        /*scene.createObject();
-        scene.objects.at(1).objectInfo.modelId = 0; // spongebob model
-        scene.objects.at(1).objectInfo.diffuseId = 0; // spongebob texture
-        scene.objects.at(1).transform.translation = {1.5f, .5f, 15.f};
-        scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-
-        // sample object
-        scene.createObject();
-        scene.objects.at(2).objectInfo.modelId = 1; // sample model
-        scene.objects.at(2).objectInfo.diffuseId = 1; // sample texture
-        scene.objects.at(2).transform.translation = {-.5f, .5f, 0.f};
-        scene.objects.at(2).transform.scale = {4.f, 4.f, 4.f};*/
     }
 
     void RenderSystem::createDrawIndirectCommands(){
