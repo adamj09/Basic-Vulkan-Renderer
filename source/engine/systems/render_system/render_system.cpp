@@ -95,7 +95,7 @@ namespace Renderer{
 
             VkDrawIndexedIndirectCommand newIndirectCommand;
             newIndirectCommand.firstIndex = 0;
-            newIndirectCommand.firstInstance = totalInstanceCount;
+            newIndirectCommand.firstInstance = 0;
             newIndirectCommand.indexCount = scene.models.at(i)->getIndexCount();
             newIndirectCommand.instanceCount = currentInstanceCount;
             newIndirectCommand.vertexOffset = 0;
