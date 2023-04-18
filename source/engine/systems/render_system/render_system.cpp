@@ -15,10 +15,7 @@ namespace Renderer{
         setupScene();
 
         createDrawIndirectCommands();
-
         createUniformBuffers();
-        //createVertexBuffers();
-        //createIndexBuffer();
 
         setupDescriptorSets();
 
@@ -51,37 +48,19 @@ namespace Renderer{
         scene.loadTexturesWithSampler(device, 0);
         scene.loadModels(device);
 
-        // Car model
-        scene.createObject();
-        scene.objects.at(0).objectInfo.modelId = 1;
-        scene.objects.at(0).objectInfo.diffuseId = -1;
-        scene.objects.at(0).transform.translation = {3.0f, 0.f, 0.f};
-        scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-        scene.objects.at(0).transform.scale = {0.01f, 0.01f, 0.01f};
-
         // Spongebob model
         scene.createObject();
-        scene.objects.at(1).objectInfo.modelId = 2; // spongebob model
-        scene.objects.at(1).objectInfo.diffuseId = 1; // spongebob texture
-        scene.objects.at(1).transform.translation = {-2.0f, 0.f, -0.4f};
-        scene.objects.at(1).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
-        scene.objects.at(1).transform.scale = {1.2f, 1.2f, 1.2f};
+        scene.objects.at(0).objectInfo.modelId = 0;
+        scene.objects.at(0).objectInfo.diffuseId = 0;
+        scene.objects.at(0).transform.translation = {3.0f, 0.f, 0.f};
+        scene.objects.at(0).transform.rotation = {glm::radians(180.f), 0.f, 0.f};
 
-        // Dragon model
+        // Vase model
         scene.createObject();
-        scene.objects.at(2).objectInfo.modelId = 0;
-        scene.objects.at(2).objectInfo.diffuseId = -1;
-        scene.objects.at(2).transform.translation = {-5.0f, 0.f, 0.f};
-        scene.objects.at(2).transform.rotation = {glm::radians(180.f), glm::radians(180.f), 0.f};
-        scene.objects.at(2).transform.scale = {3.5f, 3.5f, 3.5f};
-
-        // Tree model
-        scene.createObject();
-        scene.objects.at(3).objectInfo.modelId = 4;
-        scene.objects.at(3).objectInfo.diffuseId = 4;
-        scene.objects.at(3).transform.translation = {-9.f, -2.f, 0.f};
-        scene.objects.at(3).transform.rotation = {0.f, 0.f, 0.f};
-        scene.objects.at(3).transform.scale = {2.f, 2.f, 2.f};
+        scene.objects.at(1).objectInfo.modelId = 1;
+        scene.objects.at(1).objectInfo.diffuseId = 1;
+        scene.objects.at(1).transform.translation = {0.0f, 0.f, 0.f};
+        scene.objects.at(1).transform.scale = {1.5f, 1.5f, 1.5f};
     }
 
     void RenderSystem::createDrawIndirectCommands(){
@@ -152,31 +131,8 @@ namespace Renderer{
         } 
     }
 
-    void RenderSystem::createVertexBuffers(){
-        for(size_t i = 0; i < scene.models.size(); i++){
-            vertices.reserve(sizeof(Model::Vertex) * scene.models.at(i)->getVertexCount());
-            vertices.insert(vertices.end(), scene.models.at(i)->getVertices().begin(), scene.models.at(i)->getVertices().end());
-        }
-
-        assert(vertices.size() >= 3 && "Vertex count must be at least 3.");
-
-        vertexBuffer = std::make_unique<Buffer>(
-            device,
-            vertices.size(),
-            sizeof(Model::Vertex) * vertices.size(),
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_SHARING_MODE_EXCLUSIVE,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        );
-        vertexBuffer->writeDeviceLocalBuffer(vertices.data());
-    }
-
-    void RenderSystem::createIndexBuffer(){
-
-    }
-
     void RenderSystem::setupDescriptorSets(){
-        uint32_t descriptorCount = 2 * SwapChain::MAX_FRAMES_IN_FLIGHT; // Number of descriptor sets multiplied by frames in flight
+        uint32_t descriptorCount = 2 * SwapChain::MAX_FRAMES_IN_FLIGHT; // Number of descriptor set layouts multiplied by frames in flight
         uint32_t textureCount = static_cast<uint32_t>(scene.textures.size());
 
         // Pool setup
@@ -211,6 +167,7 @@ namespace Renderer{
         VkDescriptorImageInfo samplerImageInfo{};
         samplerImageInfo.sampler = scene.samplers.at(0)->getSampler();
 
+        // TODO: find more efficient way to store and transfer textures to gpu
         std::vector<VkDescriptorImageInfo> textureImageInfos;
         for(int i = 0; i < scene.textures.size(); i++){
             VkDescriptorImageInfo newImageInfo = scene.textures.at(i)->descriptorImageInfo();
@@ -304,8 +261,6 @@ namespace Renderer{
 
         sceneUniformBuffers[frameIndex]->writeToBuffer(&scene.sceneUniform);
         sceneUniformBuffers[frameIndex]->flush();
-
-        scene.objects.at(0).transform.rotation.y += 0.01f;
 
         for(int i = 0; i < scene.objects.size(); i++){
             Object::ObjectInfo objectInfo;

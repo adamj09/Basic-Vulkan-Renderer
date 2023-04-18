@@ -123,10 +123,14 @@ namespace Renderer{
     }
 
     std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(){
-        std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+        std::vector<VkVertexInputBindingDescription> bindingDescriptions(2);
         bindingDescriptions[0].binding = 0;
         bindingDescriptions[0].stride = sizeof(Vertex);
         bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        bindingDescriptions[1].binding = 1;
+        bindingDescriptions[1].stride = sizeof(glm::mat4);
+        bindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
 
         return bindingDescriptions;
     }
@@ -137,6 +141,12 @@ namespace Renderer{
         attributeDescriptions[1] = {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour)};      // Vertex Colour
         attributeDescriptions[2] = {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)};      // Normals
         attributeDescriptions[3] = {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoords)};      // TexCoords/UV
+
+        // Model matrix
+        attributeDescriptions[0] = {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 1
+        attributeDescriptions[1] = {5, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 2  
+        attributeDescriptions[2] = {6, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 3
+        attributeDescriptions[3] = {7, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 4
 
         return attributeDescriptions;
     }

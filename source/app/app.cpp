@@ -17,19 +17,13 @@ namespace Application{
         // Camera creation
         Renderer::Camera camera{};
         camera.enableFrustumCulling = true;
+
         Renderer::KeyboardMovementController cameraController{};
         auto viewerObject = Renderer::Object::createObject();
         viewerObject.transform.translation.z = -2.5f;
 
         float intervalTime = 0;
         auto currentTime = std::chrono::steady_clock::now();
-
-        VkPhysicalDeviceProperties physicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &physicalDeviceProperties);
-
-        std::cout << "Max compute work group count: " << physicalDeviceProperties.limits.maxComputeWorkGroupCount[0] << '\n';
-        std::cout << "Max compute work group invocations: " << physicalDeviceProperties.limits.maxComputeWorkGroupInvocations << '\n';
-        std::cout << "Max compute work group size: " << physicalDeviceProperties.limits.maxComputeWorkGroupSize[0] << '\n';
 
         while(!window.shouldClose()){
             glfwPollEvents();
@@ -54,8 +48,6 @@ namespace Application{
                 int frameIndex = renderer.getFrameIndex();
                 // Update
                 renderSystem.updateSceneUniform(camera, frameIndex, frameTime);
-                // Cull Scene
-                renderSystem.cullScene(commandBuffer, frameIndex);
                 // Start Renderpass
                 renderer.beginSwapChainRenderPass(commandBuffer);
                 // Draw Objects
