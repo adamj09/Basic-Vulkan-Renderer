@@ -31,16 +31,10 @@ namespace Renderer{
             void createDrawIndirectCommands();
             void createUniformBuffers();
 
-            void createVertexBuffers();
-            void createIndexBuffer();
-
             void setupDescriptorSets();
 
             void createGraphicsPipelineLayout();
             void createGraphicsPipeline();
-
-            void createComputePipelineLayout();
-            void createComputePipeline();
             
             size_t padUniformBufferSize(size_t originalSize);
 
@@ -48,9 +42,6 @@ namespace Renderer{
             VkRenderPass renderPass;
 
             Scene scene;
-
-            std::unique_ptr<ComputePipeline> cullPipeline;
-            VkPipelineLayout cullPipelineLayout;
 
             std::unique_ptr<GraphicsPipeline> renderPipeline;
             VkPipelineLayout renderPipelineLayout;
@@ -63,9 +54,8 @@ namespace Renderer{
             std::vector<std::unique_ptr<Buffer>> indirectCommandsBuffers;
             std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
-            std::unique_ptr<DescriptorPool> globalPool;
+            std::unique_ptr<DescriptorPool> renderDescriptorPool;
 
-            std::unique_ptr<DescriptorSetLayout> cullSetLayout;
             std::unique_ptr<DescriptorSetLayout> renderSetLayout;
 
             std::unique_ptr<Buffer> vertexBuffer;

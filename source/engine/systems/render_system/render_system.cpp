@@ -19,17 +19,11 @@ namespace Renderer{
 
         setupDescriptorSets();
 
-        createComputePipelineLayout();
-        createComputePipeline();
-
         createGraphicsPipelineLayout();
         createGraphicsPipeline();
     }
 
     RenderSystem::~RenderSystem(){
-        vkDestroyDescriptorSetLayout(device.getDevice(), cullSetLayout->getLayout(), nullptr);
-        vkDestroyPipelineLayout(device.getDevice(), cullPipelineLayout, nullptr);
-
         vkDestroyDescriptorSetLayout(device.getDevice(), renderSetLayout->getLayout(), nullptr);
         vkDestroyPipelineLayout(device.getDevice(), renderPipelineLayout, nullptr);
     }
@@ -136,13 +130,13 @@ namespace Renderer{
         uint32_t textureCount = static_cast<uint32_t>(scene.textures.size());
 
         // Pool setup
-        globalPool = std::make_unique<DescriptorPool>(device);
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount);                // Indexed indirect draw buffers
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount);                // Uniform scene info
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, descriptorCount);        // Object info
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, descriptorCount);                       // Diffuse sampler
-        globalPool->addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureCount * descriptorCount);  // Array of textures
-        globalPool->buildPool(descriptorCount); // Multiply max frames in flight by number of sets
+        renderDescriptorPool = std::make_unique<DescriptorPool>(device);
+        renderDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, descriptorCount);                // Indexed indirect draw buffers
+        renderDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, descriptorCount);                // Uniform scene info
+        renderDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, descriptorCount);        // Object info
+        renderDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, descriptorCount);                       // Diffuse sampler
+        renderDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, textureCount * descriptorCount);  // Array of textures
+        renderDescriptorPool->buildPool(descriptorCount); // Multiply max frames in flight by number of sets
 
         // Render layout setup
         renderSetLayout = std::make_unique<DescriptorSetLayout>(device);
@@ -151,13 +145,6 @@ namespace Renderer{
         renderSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2);                    // Diffuse sampler
         renderSetLayout->addBinding(textureCount, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3);   // Array of textures
         renderSetLayout->buildLayout();
-
-        // Compute cull layout setup
-        cullSetLayout = std::make_unique<DescriptorSetLayout>(device);
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, 0);            // Uniform scene info
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT, 1);    // Object info
-        cullSetLayout->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, 2);            // Indexed indirect draw data
-        cullSetLayout->buildLayout();
 
         // Descriptor image & buffer infos
         VkDescriptorBufferInfo sceneUniformBufferInfo = sceneUniformBuffers[0]->descriptorInfo();
@@ -181,36 +168,8 @@ namespace Renderer{
             renderSetLayout->writeImage(2, &samplerImageInfo),
             renderSetLayout->writeImage(3, textureImageInfos.data())
         };
-        std::vector<VkWriteDescriptorSet> cullLayoutWrites {
-            cullSetLayout->writeBuffer(0, &sceneUniformBufferInfo),
-            cullSetLayout->writeBuffer(1, &objectBufferInfo),
-            cullSetLayout->writeBuffer(2, &indirectCommandsBufferInfo),
-        };
 
-        globalPool->addNewSets(renderSetLayout->getLayout(), renderLayoutWrites, 2);
-        globalPool->addNewSets(cullSetLayout->getLayout(), cullLayoutWrites, 2);
-    }
-
-    void RenderSystem::createComputePipelineLayout(){
-        auto layout = cullSetLayout->getLayout();
-        VkPipelineLayoutCreateInfo layoutInfo = {};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 1;
-        layoutInfo.pSetLayouts = &layout;
-        layoutInfo.pushConstantRangeCount = 0;
-        layoutInfo.pPushConstantRanges = nullptr;
-
-        if(vkCreatePipelineLayout(device.getDevice(), &layoutInfo, nullptr, &cullPipelineLayout) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create compute pipeline layout.");
-    }
-
-    void RenderSystem::createComputePipeline(){
-        assert(cullPipelineLayout != nullptr && "Cannot create compute pipeline before compute pipeline layout.");
-        cullPipeline = std::make_unique<ComputePipeline>(
-            device,
-            "../source/spirv_shaders/instance_cull.comp.spv",
-            cullPipelineLayout
-        );
+        renderDescriptorPool->addNewSets(renderSetLayout->getLayout(), renderLayoutWrites, 2);
     }
 
     void RenderSystem::createGraphicsPipelineLayout(){
@@ -284,7 +243,7 @@ namespace Renderer{
             vkCmdPushConstants(commandBuffer, renderPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ModelMatrixInfo), &push);
 
             uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &globalPool->getSets()[frameIndex], 1, &dynamicOffset);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPipelineLayout, 0, 1, &renderDescriptorPool->getSets()[frameIndex], 1, &dynamicOffset);
 
             VkBuffer vertexBuffer[] = {scene.models.at(scene.objects.at(i).objectInfo.modelId)->getVertexBuffer()};
             VkDeviceSize offsets[] = {0};
@@ -294,18 +253,6 @@ namespace Renderer{
             
             vkCmdDrawIndexedIndirect(commandBuffer, indirectCommandsBuffers[frameIndex]->getBuffer(), 0, static_cast<uint32_t>(indirectCommands.size()), sizeof(VkDrawIndexedIndirectCommand));
         }
-    }
-
-    void RenderSystem::cullScene(VkCommandBuffer commandBuffer, uint32_t frameIndex){
-        cullPipeline->bind(commandBuffer);
-
-        uint32_t setIndex = (frameIndex + SwapChain::MAX_FRAMES_IN_FLIGHT) * 1; // Multiply by number of groups of uniform sets that come beforehand
-        for(size_t i = 0; i < scene.objects.size(); i++){
-            uint32_t dynamicOffset = i * static_cast<uint32_t>(objectInfoDynamicAlignment);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, cullPipelineLayout, 0, 1, &globalPool->getSets()[setIndex], 1, &dynamicOffset);
-        }
-        
-        vkCmdDispatch(commandBuffer, indirectCommands.size() / 64, 1, 1);
     }
 
     size_t RenderSystem::padUniformBufferSize(size_t originalSize){
