@@ -136,17 +136,17 @@ namespace Renderer{
     }
 
     std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions(){
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(4);
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(8);
         attributeDescriptions[0] = {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)};    // Vertex position
         attributeDescriptions[1] = {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, colour)};      // Vertex Colour
         attributeDescriptions[2] = {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)};      // Normals
         attributeDescriptions[3] = {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoords)};      // TexCoords/UV
 
         // Model matrix
-        attributeDescriptions[0] = {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 1
-        attributeDescriptions[1] = {5, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 2  
-        attributeDescriptions[2] = {6, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 3
-        attributeDescriptions[3] = {7, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 4
+        attributeDescriptions[4] = {4, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 1
+        attributeDescriptions[5] = {5, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 2  
+        attributeDescriptions[6] = {6, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 3
+        attributeDescriptions[7] = {7, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0};    // Column 4
 
         return attributeDescriptions;
     }
