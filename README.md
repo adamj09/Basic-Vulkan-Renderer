@@ -1,4 +1,4 @@
-This is a basic 3D renderer created using C++ and the Vulkan API.
+This is a primitive 3D renderer created using C++ and the Vulkan API. It is capable of loading .obj files with textures (1 texture per .obj).
 This was a high school project created for learning purposes. Before delving into this, I had no experience in C++ or Vulkan. As such, much of the code is derived from external resources.
 
 These resources influenced the development of this project the most, though others were also used:
