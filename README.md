@@ -6,4 +6,4 @@ These resources influenced the development of this project the most, though othe
 - [Vulkan Tutorial](https://vulkan-tutorial.com/): for getting started learning Vulkan.
 - Of course, Vulkan's [documentation](https://docs.vulkan.org/spec/latest/index.html) and [specification](https://registry.khronos.org/vulkan/specs/)
 
-This project is no longer being worked on. The master branch contains unfinished code that I have decided to leave as-is if ever I decide to work on this again, and so it probably won't even run. If you'd like to run the project, clone the v1.0.0 branch, as that is the latest working version.
+This project is no longer being worked on. The main branch contains unfinished code that I have decided to leave as-is if ever I decide to work on this again, and so it probably won't even run. If you'd like to run the project, clone the v1.0.0 branch, as that is the latest working version.
